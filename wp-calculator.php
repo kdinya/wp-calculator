@@ -1,12 +1,12 @@
 <?php
 /**
- * Plugin Name: Wood Calculator (Калькулятор виробів з дерева)
+ * Plugin Name: WP Calculator
  * Plugin URI: https://github.com/kdinya/wp-calculator
  * Description: Професійний калькулятор вартості виробів з дерева з довідником порід, збереженням каталогу, формуванням накладних для клієнтів та адаптивним інтерфейсом у стилі сайту.
  * Version: 1.0.0
  * Author: Wood Calculator Team
  * Author URI: https://tomchik.com.ua/
- * Text Domain: wood-calculator
+ * Text Domain: wp-calculator
  * License: GPL v2 or later
  */
 
