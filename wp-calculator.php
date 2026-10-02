@@ -181,17 +181,17 @@ class WpCalculatorGitHubUpdater {
         return $body;
     }
 
-    private function get_download_package(array ): string {
-        if (!empty(['assets']) && is_array(['assets'])) {
-            foreach (['assets'] as ) {
-                if (!empty(['name']) && 'wp-calculator.zip' === ['name'] && !empty(['browser_download_url'])) {
-                    return (string) ['browser_download_url'];
+    private function get_download_package(array $release): string {
+        if (!empty($release['assets']) && is_array($release['assets'])) {
+            foreach ($release['assets'] as $asset) {
+                if (!empty($asset['name']) && 'wp-calculator.zip' === $asset['name'] && !empty($asset['browser_download_url'])) {
+                    return (string) $asset['browser_download_url'];
                 }
             }
         }
 
-        if (!empty(['zipball_url'])) {
-            return (string) ['zipball_url'];
+        if (!empty($release['zipball_url'])) {
+            return (string) $release['zipball_url'];
         }
 
         return '';
