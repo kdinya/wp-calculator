@@ -1,5 +1,5 @@
 (function() {
-        const AJAX_URL = (window.WOOD_CALC_BOOTSTRAP && window.WOOD_CALC_BOOTSTRAP.ajax_url) || '<?php echo esc_url($ajax_url); ?>';
+        const AJAX_URL = (window.WOOD_CALC_BOOTSTRAP && window.WOOD_CALC_BOOTSTRAP.ajax_url) || (window.ajaxurl || '/wp-admin/admin-ajax.php');
         const NONCE = (window.WOOD_CALC_BOOTSTRAP && window.WOOD_CALC_BOOTSTRAP.nonce) || (document.getElementById('wood-calc-nonce') || {}).value || '';
         const LOCAL_STORAGE_KEY = 'wood_calc_local_mirror_v2';
         const LANG_STORAGE_KEY = 'wood_calc_lang';
@@ -70,7 +70,7 @@
                 summary_sum: "Загальна сума:",
                 btn_invoice_mode: "📸 Накладна для скріна",
                 btn_exit_invoice: "← Вийти з режиму накладної",
-                sec_materials_title: "🪵 Довідник матеріалів",
+                sec_materials_title: "📦 Довідник матеріалів",
                 lbl_mat_name: "Назва матеріалу",
                 lbl_mat_rate: "Тариф за 1 см² (грн)",
                 btn_mat_add: "+ Додати",
@@ -81,6 +81,8 @@
                 lbl_wipe_uninstall: "Видаляти всі дані та налаштування при повному видаленні плагіна",
                 desc_wipe_uninstall: "Якщо вимкнено — ваші створені матеріали, каталог виробів та налаштування збережуться навіть після деінсталяції плагіна.",
                 tab_appearance: "Оформлення",
+                backup_title: "💾 Резервне копіювання даних",
+                backup_desc: "Збережіть повну резервну копію ваших матеріалів, виробів та налаштувань у файлі JSON для безпеки або перенесення.",
                 appearance_title: "🎨 Зовнішній вигляд",
                 lbl_accent_color: "Акцентний колір кнопок та активних елементів",
                 lbl_custom_color: "Довільний колір:",
@@ -149,7 +151,7 @@
                 summary_sum: "Total sum:",
                 btn_invoice_mode: "📸 Invoice View for Screenshot",
                 btn_exit_invoice: "← Exit Invoice View",
-                sec_materials_title: "🪵 Material Directory",
+                sec_materials_title: "📦 Material Directory",
                 lbl_mat_name: "Wood type name",
                 lbl_mat_rate: "Rate per 1 cm² (UAH)",
                 btn_mat_add: "+ Add",
@@ -160,6 +162,8 @@
                 lbl_wipe_uninstall: "Delete all data and settings on plugin uninstallation",
                 desc_wipe_uninstall: "If disabled, your created materials, products catalog, and settings are preserved even after plugin uninstall.",
                 tab_appearance: "Appearance",
+                backup_title: "💾 Data Backup",
+                backup_desc: "Save a complete backup of your materials, items, and settings in JSON format for security or migration.",
                 appearance_title: "🎨 Appearance",
                 lbl_accent_color: "Accent color for buttons and active elements",
                 lbl_custom_color: "Custom color:",
@@ -260,6 +264,12 @@
             document.documentElement.style.setProperty('--tc-green', accentColor);
             document.documentElement.style.setProperty('--tc-green-dark', shadeColor(accentColor, -15));
             document.documentElement.style.setProperty('--tc-green-light', tintLightColor(accentColor));
+            const appEl = document.getElementById('wood-calculator-app');
+            if (appEl) {
+                appEl.style.setProperty('--tc-green', accentColor);
+                appEl.style.setProperty('--tc-green-dark', shadeColor(accentColor, -15));
+                appEl.style.setProperty('--tc-green-light', tintLightColor(accentColor));
+            }
         }
 
         function shadeColor(hex, percent) {
@@ -823,18 +833,24 @@
         };
 
         window.duplicateItem = function(id) {
-            const item = items.find(it => it.id === id);
+            const item = items.find(it => String(it.id) === String(id));
             if (!item) return;
 
             const copy = JSON.parse(JSON.stringify(item));
             copy.id = 'p_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-            copy.name = copy.name + (currentLang === 'uk' ? ' (копія)' : ' (copy)');
+            const suffix = (currentLang === 'uk' ? ' (копія)' : ' (copy)');
+            copy.name = (copy.name || '') + suffix;
 
-            const idx = items.findIndex(it => it.id === id);
-            items.splice(idx + 1, 0, copy);
+            const idx = items.findIndex(it => String(it.id) === String(id));
+            if (idx !== -1) {
+                items.splice(idx + 1, 0, copy);
+            } else {
+                items.push(copy);
+            }
 
             renderItems();
-            saveData();
+            saveData(true);
+            openEditProductModal(copy.id);
         };
 
         window.askDeleteItem = function(id) {
@@ -1015,7 +1031,7 @@
         
         let draggedRow = null;
         function setupDragAndDrop() {
-            const tbody = document.getElementById('catalog-items-body');
+            const tbody = document.getElementById('items-tbody') || document.getElementById('catalog-items-body');
             if (!tbody) return;
 
             const rows = tbody.querySelectorAll('tr[data-id]');

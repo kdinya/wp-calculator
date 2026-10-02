@@ -1,27 +1,7 @@
 <?php
 if (!defined("ABSPATH")) exit;
 
-add_action('admin_menu', 'wood_calc_add_admin_menu');
-function wood_calc_add_admin_menu() {
-    add_menu_page(
-        'Калькулятор виробів',
-        'Калькулятор виробів',
-        'manage_options',
-        'wood-calculator',
-        'wood_calc_admin_page_render',
-        'dashicons-calculator',
-        30
-    );
-}
-
-function wood_calc_admin_page_render() {
-    echo '<div class="wrap" style="max-width:1300px; margin:20px auto 40px auto;">';
-    echo wood_calc_render_admin_app();
-    echo '</div>';
-}
-
-// 2. AJAX: Отримання збережених даних
-// 2. Отримання збережених даних з міграцією
+// 1. Отримання збережених даних з безпечною міграцією
 function wood_calc_get_stored_data() {
     $main = get_option('wood_calc_store_v3', null);
     if (!empty($main) && is_array($main) && isset($main['materials'])) {
@@ -78,6 +58,7 @@ function wood_calc_get_stored_data() {
     return $initial;
 }
 
+// 2. AJAX: Отримання збережених даних
 add_action('wp_ajax_wood_calc_get', 'wood_calc_get_data');
 function wood_calc_get_data() {
     if (!check_ajax_referer('wood_calc_nonce', 'nonce', false)) {
@@ -118,9 +99,4 @@ function wood_calc_save_data() {
     } else {
         wp_send_json_error('Помилка структури даних');
     }
-}
-
-// 4. Інтерфейс калькулятора в адмінці
-function wood_calc_render_shortcode() {
-    return wood_calc_render_admin_app();
 }
