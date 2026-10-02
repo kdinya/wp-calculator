@@ -1,5 +1,7 @@
 <?php
-if (!defined('ABSPATH')) exit;
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 class WpCalculatorAdmin {
     public function __construct() {
@@ -20,7 +22,9 @@ class WpCalculatorAdmin {
     }
 
     public function enqueue_assets() {
-        if (strpos(, 'wp-calculator') === false) return;
+        if (empty() || strpos(, 'wp-calculator') === false) {
+            return;
+        }
 
         wp_enqueue_style(
             'wp-calculator-admin',
@@ -72,7 +76,7 @@ class WpCalculatorAdmin {
          = isset(['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', ['accent_color']) ? ['accent_color'] : '#95b504';
          = wp_create_nonce('wood_calc_nonce');
         ?>
-        <div class="wrap">
+<div class="wrap">
             <input type="hidden" id="wood-calc-nonce" value="<?php echo esc_attr(); ?>">
             <div style="--tc-green: <?php echo esc_attr(); ?>;">
                 <div id="wood-calculator-app" class="tc-app-wrapper" style="--tc-green: <?php echo esc_attr($accent_color); ?>;">
