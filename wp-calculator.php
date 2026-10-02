@@ -718,6 +718,35 @@ function wood_calc_render_admin_app() {
                 box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             }
 
+            .grid-add-product {
+                display: grid;
+                grid-template-columns: 2fr 1.5fr 1fr 1fr 1.2fr auto;
+                gap: 10px;
+                align-items: end;
+            }
+
+            .tc-sec3-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .tc-sec3-actions {
+                font-size: 13px;
+                font-weight: normal;
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
+            .tc-table-responsive {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
             @media (max-width: 900px) {
                 .tc-layout {
                     grid-template-columns: 1fr;
@@ -730,6 +759,106 @@ function wood_calc_render_admin_app() {
                 }
                 .grid-calc .full-mobile {
                     grid-column: span 2;
+                }
+                .grid-add-product {
+                    grid-template-columns: 1fr 1fr;
+                }
+                .grid-add-product > div:last-child {
+                    grid-column: span 2;
+                }
+                .grid-add-product > div:last-child .btn {
+                    width: 100%;
+                }
+            }
+
+            @media (max-width: 782px) {
+                #wood-calculator-app {
+                    padding: 14px 10px;
+                    border-radius: 8px;
+                }
+                .tc-header {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 10px;
+                }
+                .tc-header h1 {
+                    font-size: 18px;
+                    line-height: 1.3;
+                }
+                .tc-header-actions {
+                    display: flex;
+                    justify-content: space-between;
+                    width: 100%;
+                }
+                .tc-tab-bar {
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+                .tc-tab-btn {
+                    flex: 1 1 calc(50% - 6px);
+                    justify-content: center;
+                    padding: 8px 10px;
+                    font-size: 13px;
+                }
+                .tc-card {
+                    padding: 14px 12px;
+                }
+                .summary-bar {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 10px;
+                    text-align: center;
+                }
+                .summary-total {
+                    font-size: 18px;
+                }
+                .modal-content {
+                    width: 95%;
+                    max-width: 440px;
+                    padding: 16px;
+                    margin: 10px;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                }
+            }
+
+            @media (max-width: 520px) {
+                .tc-tab-btn {
+                    flex: 1 1 100%;
+                }
+                .grid-calc {
+                    grid-template-columns: 1fr;
+                }
+                .grid-calc .full-mobile {
+                    grid-column: span 1;
+                }
+                .calc-result-box {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 8px;
+                }
+                .grid-add-product {
+                    grid-template-columns: 1fr;
+                }
+                .grid-add-product > div:last-child {
+                    grid-column: span 1;
+                }
+                .tc-sec3-header {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .tc-sec3-actions {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .tc-sec3-actions .btn {
+                    width: 100%;
+                    justify-content: center;
+                }
+                #wood-calculator-app input[type="text"],
+                #wood-calculator-app input[type="number"],
+                #wood-calculator-app select {
+                    font-size: 16px;
                 }
             }
         </style>
@@ -794,7 +923,7 @@ function wood_calc_render_admin_app() {
                     <!-- 2. ДОДАТИ ВИРІБ У СПИСОК -->
                     <div class="tc-card no-invoice">
                         <h2 data-i18n="sec2_title">2. Додати виріб у список</h2>
-                        <div style="display:grid; grid-template-columns: 2fr 1.5fr 1fr 1fr 1.2fr auto; gap:10px; align-items:end;">
+                        <div class="grid-add-product">
                             <div>
                                 <label data-i18n="lbl_add_name">Назва виробу</label>
                                 <input type="text" id="add-name" placeholder="напр. Дошка дубова">
@@ -830,9 +959,9 @@ function wood_calc_render_admin_app() {
                             </div>
                         </div>
 
-                        <h2 class="no-invoice" style="display:flex; justify-content:space-between; align-items:center;">
+                        <h2 class="no-invoice tc-sec3-header">
                             <span data-i18n="sec3_title">3. Список виробів</span>
-                            <div style="font-size:13px; font-weight:normal; display:flex; gap:12px; align-items:center;">
+                            <div class="tc-sec3-actions">
                                 <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; margin:0;">
                                     <input type="checkbox" id="filter-selected" onchange="renderItems()">
                                     <span data-i18n="chk_hide_unselected">Сховати невиділені</span>
@@ -923,6 +1052,7 @@ function wood_calc_render_admin_app() {
                             <button type="button" class="btn btn-dark" onclick="addNewMaterial()" data-i18n="btn_mat_add">+ Додати</button>
                         </div>
 
+                        <div class="tc-table-responsive">
                         <table class="tc-table" style="margin-top:16px;">
                             <thead>
                                 <tr>
@@ -933,6 +1063,7 @@ function wood_calc_render_admin_app() {
                             </thead>
                             <tbody id="materials-tbody"></tbody>
                         </table>
+                        </div>
                     </div>
                 </div>
             </div>
