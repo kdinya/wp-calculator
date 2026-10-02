@@ -439,6 +439,9 @@ function wood_calc_render_admin_app() {
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
                 box-sizing: border-box;
                 line-height: 1.5;
+                width: 100%;
+                max-width: 100%;
+                overflow-x: hidden;
             }
 
             #wood-calculator-app * {
@@ -589,7 +592,7 @@ function wood_calc_render_admin_app() {
 
             .tc-layout {
                 display: grid;
-                grid-template-columns: 1fr 360px;
+                grid-template-columns: minmax(0, 1fr) 360px;
                 gap: 24px;
                 align-items: start;
             }
@@ -597,11 +600,13 @@ function wood_calc_render_admin_app() {
                 display: flex;
                 flex-direction: column;
                 gap: 24px;
+                min-width: 0;
             }
             .tc-side-col {
                 display: flex;
                 flex-direction: column;
                 gap: 24px;
+                min-width: 0;
             }
 
             .tc-card {
@@ -610,6 +615,9 @@ function wood_calc_render_admin_app() {
                 padding: 20px;
                 border: 1px solid var(--tc-border);
                 box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+                box-sizing: border-box;
+                min-width: 0;
+                max-width: 100%;
             }
             .tc-card h2 {
                 margin-top: 0;
@@ -630,6 +638,9 @@ function wood_calc_render_admin_app() {
             }
             input[type="text"], input[type="number"], select {
                 width: 100%;
+                min-width: 0;
+                max-width: 100%;
+                box-sizing: border-box;
                 padding: 8px 12px;
                 border: 1px solid #cbd5e1;
                 border-radius: 6px;
@@ -850,7 +861,7 @@ function wood_calc_render_admin_app() {
                 -webkit-overflow-scrolling: touch;
             }
 
-            @media (max-width: 900px) {
+            @media (max-width: 1060px) {
                 .tc-layout {
                     grid-template-columns: 1fr;
                 }
@@ -925,14 +936,14 @@ function wood_calc_render_admin_app() {
                 }
             }
 
-            @media (max-width: 520px) {
+            @media (max-width: 540px) {
                 .tc-tab-btn {
                     flex: 1 1 100%;
                 }
                 .tc-table-responsive {
-                    margin-left: -12px;
-                    margin-right: -12px;
-                    padding: 0 12px;
+                    margin-left: 0;
+                    margin-right: 0;
+                    padding: 0;
                 }
                 .tc-table-responsive .tc-table {
                     min-width: 620px;
@@ -1182,6 +1193,7 @@ function wood_calc_render_admin_app() {
                     </div>
                 </div>
             </div>
+        </div>
         </div>
 
         <!-- ВКЛАДКА: ОФОРМЛЕННЯ -->
