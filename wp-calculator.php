@@ -250,26 +250,51 @@ class WpCalculatorGitHubUpdater {
             wp_send_json_error(array('message' => 'Архів wp-calculator.zip не знайдено в релізі.'));
         }
 
+        // Забезпечуємо запис у transient update_plugins, щоб Plugin_Upgrader коректно виконав як оновлення, так і перевстановлення поточної версії
+        $current = get_site_transient('update_plugins');
+        if (!is_object($current)) {
+            $current = new \stdClass();
+        }
+        if (!isset($current->response) || !is_array($current->response)) {
+            $current->response = array();
+        }
+
+        $obj = new \stdClass();
+        $obj->slug        = dirname($this->plugin_slug);
+        $obj->new_version = ltrim((string) ($release['tag_name'] ?? $this->version), 'v');
+        $obj->url         = "https://github.com/{$this->repo_owner}/{$this->repo_name}";
+        $obj->package     = $package;
+        $obj->plugin      = $this->plugin_slug;
+
+        $current->response[$this->plugin_slug] = $obj;
+        set_site_transient('update_plugins', $current);
+
         $skin = new \WP_Ajax_Upgrader_Skin();
         $upgrader = new \Plugin_Upgrader($skin);
         $result = $upgrader->upgrade($this->plugin_slug, array('package' => $package));
 
+        $err_message = '';
         if (is_wp_error($result)) {
-            wp_send_json_error(array('message' => $result->get_error_message()));
+            $err_message = $result->get_error_message();
+        } elseif (isset($skin->result) && is_wp_error($skin->result)) {
+            $err_message = $skin->result->get_error_message();
+        } elseif (method_exists($skin, 'get_error_messages') && !empty($skin->get_error_messages())) {
+            $err_message = $skin->get_error_messages();
+        } elseif (false === $result) {
+            $err_message = 'Не вдалося виконати операцію оновлення/перевстановлення плагіна.';
         }
 
-        if (is_wp_error($skin->result)) {
-            wp_send_json_error(array('message' => $skin->result->get_error_message()));
-        }
-
-        if (false === $result) {
-            wp_send_json_error(array('message' => 'Оновлення завершилося помилкою.'));
+        if (!empty($err_message)) {
+            wp_send_json_error(array('message' => $err_message));
         }
 
         activate_plugin($this->plugin_slug);
+        delete_transient('wood_calc_github_latest_release');
+        delete_site_transient('update_plugins');
+
         wp_send_json_success(array(
-            'message' => 'Плагін успішно оновлено!',
-            'version' => ltrim($release['tag_name'], 'v')
+            'message' => 'Плагін успішно оновлено/перевстановлено!',
+            'version' => ltrim((string) ($release['tag_name'] ?? $this->version), 'v')
         ));
     }
 }
@@ -308,7 +333,7 @@ function wood_calc_get_data() {
         wp_send_json_error('Доступ заборонено', 403);
     }
 
-    $keys = array('wood_calc_store_v3', 'wood_calc_store_v4', 'wood_calc_store_v2', 'wood_calc_store');
+    $keys = array('wood_calc_store_v3', 'wood_calc_store_v4', 'wood_calc_store_backup', 'wood_calc_store_v2', 'wood_calc_store');
     $merged_materials = array();
     $merged_items = array();
     $saved_settings = array('lang' => 'uk');
@@ -418,19 +443,95 @@ function wood_calc_render_admin_app() {
                 box-sizing: border-box;
             }
 
+            /* Фірмові чекбокси без системного синього кольору WordPress */
             #wood-calculator-app input[type="checkbox"] {
-                accent-color: var(--tc-green) !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+                appearance: none !important;
                 width: 18px !important;
                 height: 18px !important;
+                min-width: 18px !important;
+                min-height: 18px !important;
+                border: 2px solid #94a3b8 !important;
+                border-radius: 4px !important;
+                background-color: #ffffff !important;
                 cursor: pointer !important;
-                vertical-align: middle;
+                vertical-align: middle !important;
+                position: relative !important;
+                margin: 0 4px 0 0 !important;
+                padding: 0 !important;
+                display: inline-grid !important;
+                place-content: center !important;
+                box-shadow: none !important;
+                outline: none !important;
+                transition: border-color 0.15s ease, background-color 0.15s ease !important;
             }
 
+            #wood-calculator-app input[type="checkbox"]:checked {
+                background-color: var(--tc-green) !important;
+                border-color: var(--tc-green) !important;
+            }
+
+            #wood-calculator-app input[type="checkbox"]:checked::before {
+                content: "" !important;
+                width: 5px !important;
+                height: 9px !important;
+                border: solid #ffffff !important;
+                border-width: 0 2px 2px 0 !important;
+                transform: rotate(45deg) !important;
+                margin: -2px 0 0 0 !important;
+                background: transparent !important;
+                display: block !important;
+                float: none !important;
+            }
+
+            #wood-calculator-app input[type="checkbox"]:focus {
+                border-color: var(--tc-green) !important;
+                box-shadow: 0 0 0 2px var(--tc-green-light) !important;
+            }
+
+            /* Фірмові радіокнопки */
             #wood-calculator-app input[type="radio"] {
-                accent-color: var(--tc-green) !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+                appearance: none !important;
                 width: 18px !important;
                 height: 18px !important;
+                min-width: 18px !important;
+                min-height: 18px !important;
+                border: 2px solid #94a3b8 !important;
+                border-radius: 50% !important;
+                background-color: #ffffff !important;
                 cursor: pointer !important;
+                vertical-align: middle !important;
+                position: relative !important;
+                margin: 0 4px 0 0 !important;
+                padding: 0 !important;
+                display: inline-grid !important;
+                place-content: center !important;
+                box-shadow: none !important;
+                outline: none !important;
+                transition: border-color 0.15s ease !important;
+            }
+
+            #wood-calculator-app input[type="radio"]:checked {
+                border-color: var(--tc-green) !important;
+            }
+
+            #wood-calculator-app input[type="radio"]:checked::before {
+                content: "" !important;
+                width: 8px !important;
+                height: 8px !important;
+                border-radius: 50% !important;
+                background: var(--tc-green) !important;
+                margin: 0 !important;
+                display: block !important;
+                float: none !important;
+            }
+
+            #wood-calculator-app input[type="radio"]:focus {
+                border-color: var(--tc-green) !important;
+                box-shadow: 0 0 0 2px var(--tc-green-light) !important;
             }
 
             .tc-tab-bar {
@@ -1648,17 +1749,29 @@ function wood_calc_render_admin_app() {
                     if (res.success && res.data) {
                         materials = Array.isArray(res.data.materials) ? res.data.materials : [];
                         items = Array.isArray(res.data.items) ? res.data.items : [];
-                        if (res.data.settings && res.data.settings.lang) {
-                            currentLang = res.data.settings.lang;
-                            localStorage.setItem(LANG_STORAGE_KEY, currentLang);
-                        }
-                        if (res.data.settings && res.data.settings.accent_color && /^#[0-9a-fA-F]{6}$/.test(res.data.settings.accent_color)) {
-                            accentColor = res.data.settings.accent_color;
-                        }
-                        if (res.data.settings && typeof res.data.settings.wipe_on_uninstall !== 'undefined') {
-                            wipeOnUninstall = !!res.data.settings.wipe_on_uninstall;
-                            const wipeCb = document.getElementById('wc-wipe-on-uninstall');
-                            if (wipeCb) wipeCb.checked = wipeOnUninstall;
+                        if (res.data.settings) {
+                            if (res.data.settings.lang) {
+                                currentLang = res.data.settings.lang;
+                                localStorage.setItem(LANG_STORAGE_KEY, currentLang);
+                            }
+                            if (res.data.settings.accent_color && /^#[0-9a-fA-F]{6}$/.test(res.data.settings.accent_color)) {
+                                accentColor = res.data.settings.accent_color;
+                            }
+                            if (typeof res.data.settings.wipe_on_uninstall !== 'undefined') {
+                                wipeOnUninstall = !!res.data.settings.wipe_on_uninstall;
+                                const wipeCb = document.getElementById('wc-wipe-on-uninstall');
+                                if (wipeCb) wipeCb.checked = wipeOnUninstall;
+                            }
+                            if (res.data.settings.column_visibility && typeof res.data.settings.column_visibility === 'object') {
+                                columnVisibility = Object.assign({}, columnVisibility, res.data.settings.column_visibility);
+                                ['photo', 'mat', 'dims', 'price', 'qty', 'sum'].forEach(col => {
+                                    const cb = document.getElementById('col-toggle-' + col);
+                                    if (cb && typeof columnVisibility[col] !== 'undefined') {
+                                        cb.checked = !!columnVisibility[col];
+                                    }
+                                });
+                                applyColumnVisibility();
+                            }
                         }
                         applyAccentColor();
                         
@@ -1666,7 +1779,12 @@ function wood_calc_render_admin_app() {
                         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
                             materials: materials,
                             items: items,
-                            settings: { lang: currentLang, accent_color: accentColor, wipe_on_uninstall: wipeOnUninstall }
+                            settings: {
+                                lang: currentLang,
+                                accent_color: accentColor,
+                                wipe_on_uninstall: wipeOnUninstall,
+                                column_visibility: columnVisibility
+                            }
                         }));
                         if (statusEl) statusEl.textContent = t('saved');
                     } else {
@@ -1699,6 +1817,16 @@ function wood_calc_render_admin_app() {
                         const wipeCb = document.getElementById('wc-wipe-on-uninstall');
                         if (wipeCb) wipeCb.checked = wipeOnUninstall;
                     }
+                    if (parsed.settings && parsed.settings.column_visibility && typeof parsed.settings.column_visibility === 'object') {
+                        columnVisibility = Object.assign({}, columnVisibility, parsed.settings.column_visibility);
+                        ['photo', 'mat', 'dims', 'price', 'qty', 'sum'].forEach(col => {
+                            const cb = document.getElementById('col-toggle-' + col);
+                            if (cb && typeof columnVisibility[col] !== 'undefined') {
+                                cb.checked = !!columnVisibility[col];
+                            }
+                        });
+                        applyColumnVisibility();
+                    }
                     applyAccentColor();
                     isDataInitialized = true;
                     if (statusEl) statusEl.textContent = t('offline');
@@ -1714,7 +1842,12 @@ function wood_calc_render_admin_app() {
             const payload = {
                 materials: materials,
                 items: items,
-                settings: { lang: currentLang, accent_color: accentColor, wipe_on_uninstall: wipeOnUninstall }
+                settings: {
+                    lang: currentLang,
+                    accent_color: accentColor,
+                    wipe_on_uninstall: wipeOnUninstall,
+                    column_visibility: columnVisibility
+                }
             };
 
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
@@ -2151,6 +2284,7 @@ function wood_calc_render_admin_app() {
         window.toggleColumnVisibility = function(colName, isVisible) {
             columnVisibility[colName] = isVisible;
             applyColumnVisibility();
+            saveData(true);
         };
 
         function applyColumnVisibility() {
