@@ -1,13 +1,4 @@
-window.WOOD_CALC_BOOTSTRAP = <?php echo wp_json_encode(array(
-        'nonce'    => $nonce,
-        'ajax_url' => $ajax_url,
-        'data'     => $stored_data,
-        'lang'     => $current_lang,
-        'accent'   => $accent_color,
-        'wipe'     => $wipe_on_uninstall
-    )); ?>;
-
-    (function() {
+(function() {
         const AJAX_URL = (window.WOOD_CALC_BOOTSTRAP && window.WOOD_CALC_BOOTSTRAP.ajax_url) || '<?php echo esc_url($ajax_url); ?>';
         const NONCE = (window.WOOD_CALC_BOOTSTRAP && window.WOOD_CALC_BOOTSTRAP.nonce) || (document.getElementById('wood-calc-nonce') || {}).value || '';
         const LOCAL_STORAGE_KEY = 'wood_calc_local_mirror_v2';
