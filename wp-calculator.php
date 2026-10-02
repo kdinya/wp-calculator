@@ -326,23 +326,28 @@ function wood_calc_admin_page_render() {
 }
 
 // 2. AJAX: Отримання збережених даних
-add_action('wp_ajax_wood_calc_get', 'wood_calc_get_data');
-function wood_calc_get_data() {
-    if (!check_ajax_referer('wood_calc_nonce', 'nonce', false)) {
-        wp_send_json_error(array('message' => 'Помилка безпеки: недійсний nonce.'), 403);
-    }
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Доступ заборонено', 403);
+// 2. Отримання збережених даних з міграцією
+function wood_calc_get_stored_data() {
+    $main = get_option('wood_calc_store_v3', null);
+    if (!empty($main) && is_array($main) && isset($main['materials'])) {
+        return $main;
     }
 
-    $keys = array('wood_calc_store_v3', 'wood_calc_store_v4', 'wood_calc_store_backup', 'wood_calc_store_v2', 'wood_calc_store');
+    $backup = get_option('wood_calc_store_backup', null);
+    if (!empty($backup) && is_array($backup) && isset($backup['materials'])) {
+        return $backup;
+    }
+
+    $legacy_keys = array('wood_calc_store_v4', 'wood_calc_store_v2', 'wood_calc_store');
     $merged_materials = array();
     $merged_items = array();
-    $saved_settings = array('lang' => 'uk');
+    $saved_settings = array('lang' => 'uk', 'accent_color' => '#95b504', 'wipe_on_uninstall' => false);
+    $found_legacy = false;
 
-    foreach ($keys as $k) {
+    foreach ($legacy_keys as $k) {
         $val = get_option($k, null);
         if (!empty($val) && is_array($val)) {
+            $found_legacy = true;
             if (!empty($val['settings']) && is_array($val['settings'])) {
                 $saved_settings = array_merge($saved_settings, $val['settings']);
             }
@@ -365,12 +370,29 @@ function wood_calc_get_data() {
         }
     }
 
-    $data = array(
+    $initial = array(
         'materials' => array_values($merged_materials),
         'items'     => array_values($merged_items),
         'settings'  => $saved_settings
     );
 
+    if ($found_legacy) {
+        update_option('wood_calc_store_v3', $initial, false);
+    }
+
+    return $initial;
+}
+
+add_action('wp_ajax_wood_calc_get', 'wood_calc_get_data');
+function wood_calc_get_data() {
+    if (!check_ajax_referer('wood_calc_nonce', 'nonce', false)) {
+        wp_send_json_error(array('message' => 'Помилка безпеки: недійсний nonce.'), 403);
+    }
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Доступ заборонено', 403);
+    }
+
+    $data = wood_calc_get_stored_data();
     wp_send_json_success($data);
 }
 
@@ -414,11 +436,17 @@ function wood_calc_render_admin_app() {
     }
 
     $ajax_url = admin_url('admin-ajax.php');
+    $nonce = wp_create_nonce('wood_calc_nonce');
+    $stored_data = wood_calc_get_stored_data();
+    $saved_settings = isset($stored_data['settings']) && is_array($stored_data['settings']) ? $stored_data['settings'] : array();
+    $current_lang = isset($saved_settings['lang']) && in_array($saved_settings['lang'], array('uk', 'en'), true) ? $saved_settings['lang'] : 'uk';
+    $accent_color = isset($saved_settings['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', $saved_settings['accent_color']) ? $saved_settings['accent_color'] : '#95b504';
+    $wipe_on_uninstall = !empty($saved_settings['wipe_on_uninstall']);
 
     ob_start();
     ?>
-    <div id="wood-calculator-app" class="tc-app-wrapper">
-        <style>
+    <input type="hidden" id="wood-calc-nonce" value="<?php echo esc_attr($nonce); ?>">
+    <div id="wood-calculator-app" class="tc-app-wrapper" style="--tc-green: <?php echo esc_attr($accent_color); ?>;"><style>
             :root {
                 --tc-dark: #24272a;
                 --tc-green: #95b504;
@@ -1356,9 +1384,18 @@ function wood_calc_render_admin_app() {
     </div>
 
     <script>
+    window.WOOD_CALC_BOOTSTRAP = <?php echo wp_json_encode(array(
+        'nonce'    => $nonce,
+        'ajax_url' => $ajax_url,
+        'data'     => $stored_data,
+        'lang'     => $current_lang,
+        'accent'   => $accent_color,
+        'wipe'     => $wipe_on_uninstall
+    )); ?>;
+
     (function() {
-        const AJAX_URL = '<?php echo esc_url($ajax_url); ?>';
-        const NONCE = (document.getElementById('wood-calc-nonce') || {}).value || '';
+        const AJAX_URL = (window.WOOD_CALC_BOOTSTRAP && window.WOOD_CALC_BOOTSTRAP.ajax_url) || '<?php echo esc_url($ajax_url); ?>';
+        const NONCE = (window.WOOD_CALC_BOOTSTRAP && window.WOOD_CALC_BOOTSTRAP.nonce) || (document.getElementById('wood-calc-nonce') || {}).value || '';
         const LOCAL_STORAGE_KEY = 'wood_calc_local_mirror_v2';
         const LANG_STORAGE_KEY = 'wood_calc_lang';
         let isDataInitialized = false;
@@ -1763,6 +1800,33 @@ function wood_calc_render_admin_app() {
         // Завантаження даних
         function loadData() {
             const statusEl = document.getElementById('wc-status');
+
+            // 1. Спершу миттєво ініціалізуємося з серверного bootstrap (без затримки мережі)
+            if (window.WOOD_CALC_BOOTSTRAP && window.WOOD_CALC_BOOTSTRAP.data) {
+                const bData = window.WOOD_CALC_BOOTSTRAP.data;
+                materials = Array.isArray(bData.materials) ? bData.materials : [];
+                items = Array.isArray(bData.items) ? bData.items : [];
+                if (bData.settings) {
+                    if (bData.settings.lang && (bData.settings.lang === 'uk' || bData.settings.lang === 'en')) {
+                        currentLang = bData.settings.lang;
+                    }
+                    if (bData.settings.accent_color && /^#[0-9a-fA-F]{6}$/.test(bData.settings.accent_color)) {
+                        accentColor = bData.settings.accent_color;
+                    }
+                    if (typeof bData.settings.wipe_on_uninstall !== 'undefined') {
+                        wipeOnUninstall = !!bData.settings.wipe_on_uninstall;
+                    }
+                    if (bData.settings.column_visibility && typeof bData.settings.column_visibility === 'object') {
+                        columnVisibility = Object.assign({}, columnVisibility, bData.settings.column_visibility);
+                    }
+                }
+                isDataInitialized = true;
+                applyAccentColor();
+                applyLanguageToDom();
+                if (statusEl) statusEl.textContent = t('saved');
+                return;
+            }
+
             if (statusEl) statusEl.textContent = t('syncing');
 
             const savedLocalLang = localStorage.getItem(LANG_STORAGE_KEY);
@@ -1803,18 +1867,7 @@ function wood_calc_render_admin_app() {
                             }
                         }
                         applyAccentColor();
-                        
                         isDataInitialized = true;
-                        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
-                            materials: materials,
-                            items: items,
-                            settings: {
-                                lang: currentLang,
-                                accent_color: accentColor,
-                                wipe_on_uninstall: wipeOnUninstall,
-                                column_visibility: columnVisibility
-                            }
-                        }));
                         if (statusEl) statusEl.textContent = t('saved');
                     } else {
                         fallbackToLocalStorage();
