@@ -5,7 +5,7 @@
  * Description: Професійний калькулятор вартості виробів з дерева з довідником порід, збереженням каталогу, формуванням накладних для клієнтів, адаптивним інтерфейсом та автооновленням з GitHub.
  * Version: 1.0.0
  * Author: kdinya
- * Author URI: https://tomchik.com.ua/
+ * Author URI: https://github.com/kdinya
  * Text Domain: wp-calculator
  * License: GPL v2 or later
  */
@@ -237,8 +237,10 @@ class WpCalculatorGitHubUpdater {
             wp_send_json_error(array('message' => 'Недостатньо прав для оновлення плагінів.'), 403);
         }
 
+        include_once ABSPATH . 'wp-admin/includes/file.php';
         include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         include_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+        include_once ABSPATH . 'wp-admin/includes/plugin.php';
 
         $release = $this->get_latest_release(true);
         if (!$release) {
@@ -271,7 +273,7 @@ class WpCalculatorGitHubUpdater {
 
         $skin = new \WP_Ajax_Upgrader_Skin();
         $upgrader = new \Plugin_Upgrader($skin);
-        $result = $upgrader->upgrade($this->plugin_slug, array('package' => $package));
+        $result = $upgrader->upgrade($this->plugin_slug);
 
         $err_message = '';
         if (is_wp_error($result)) {
@@ -927,6 +929,17 @@ function wood_calc_render_admin_app() {
                 .tc-tab-btn {
                     flex: 1 1 100%;
                 }
+                .tc-table-responsive {
+                    margin-left: -12px;
+                    margin-right: -12px;
+                    padding: 0 12px;
+                }
+                .tc-table-responsive .tc-table {
+                    min-width: 620px;
+                }
+                .tc-side-col .tc-table-responsive .tc-table {
+                    min-width: 340px;
+                }
                 .grid-calc {
                     grid-template-columns: 1fr;
                 }
@@ -1097,7 +1110,8 @@ function wood_calc_render_admin_app() {
 
                         <!-- Таблиця виробів -->
                         <div style="overflow-x:auto;">
-                            <table class="tc-table" id="items-table">
+                            <div class="tc-table-responsive">
+                        <table class="tc-table" id="items-table">
                                 <thead>
                                     <tr>
                                         <th style="width:40px;" class="no-invoice"></th>
@@ -1332,6 +1346,7 @@ function wood_calc_render_admin_app() {
     <script>
     (function() {
         const AJAX_URL = '<?php echo esc_url($ajax_url); ?>';
+        const NONCE = (document.getElementById('wood-calc-nonce') || {}).value || '';
         const LOCAL_STORAGE_KEY = 'wood_calc_local_mirror_v2';
         const LANG_STORAGE_KEY = 'wood_calc_lang';
         let isDataInitialized = false;
@@ -1753,6 +1768,8 @@ function wood_calc_render_admin_app() {
                             if (res.data.settings.lang) {
                                 currentLang = res.data.settings.lang;
                                 localStorage.setItem(LANG_STORAGE_KEY, currentLang);
+                                const langRadio = document.getElementById('wc-lang-' + currentLang);
+                                if (langRadio) langRadio.checked = true;
                             }
                             if (res.data.settings.accent_color && /^#[0-9a-fA-F]{6}$/.test(res.data.settings.accent_color)) {
                                 accentColor = res.data.settings.accent_color;
@@ -1808,6 +1825,8 @@ function wood_calc_render_admin_app() {
                     if (parsed.items && Array.isArray(parsed.items)) items = parsed.items;
                     if (parsed.settings && parsed.settings.lang) {
                         currentLang = parsed.settings.lang;
+                        const langRadio = document.getElementById('wc-lang-' + currentLang);
+                        if (langRadio) langRadio.checked = true;
                     }
                     if (parsed.settings && parsed.settings.accent_color) {
                         accentColor = parsed.settings.accent_color;
@@ -2394,7 +2413,22 @@ function wood_calc_render_admin_app() {
                 .replace(/'/g, '&#039;');
         }
 
-        document.addEventListener('DOMContentLoaded', loadData);
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedLocalLang = localStorage.getItem(LANG_STORAGE_KEY);
+            if (savedLocalLang === 'uk' || savedLocalLang === 'en') {
+                currentLang = savedLocalLang;
+                const langRadio = document.getElementById('wc-lang-' + currentLang);
+                if (langRadio) langRadio.checked = true;
+            }
+            try {
+                const local = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '{}');
+                if (local.settings && local.settings.accent_color && /^#[0-9a-fA-F]{6}$/.test(local.settings.accent_color)) {
+                    accentColor = local.settings.accent_color;
+                }
+            } catch(e) {}
+            applyAccentColor();
+            loadData();
+        });
         loadData();
     })();
     </script>
