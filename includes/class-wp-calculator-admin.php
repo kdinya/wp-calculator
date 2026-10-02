@@ -1,0 +1,450 @@
+<?php
+if (!defined('ABSPATH')) exit;
+
+class WpCalculatorAdmin {
+    public function __construct() {
+        add_action('admin_menu', array(, 'add_admin_menu'));
+        add_action('admin_enqueue_scripts', array(, 'enqueue_assets'));
+    }
+
+    public function add_admin_menu() {
+        add_menu_page(
+            'Калькулятор виробів',
+            'Калькулятор виробів',
+            'manage_options',
+            'wp-calculator',
+            array(, 'render_admin_page'),
+            'dashicons-calculator',
+            30
+        );
+    }
+
+    public function enqueue_assets() {
+        if (strpos(, 'wp-calculator') === false) return;
+
+        wp_enqueue_style(
+            'wp-calculator-admin',
+            WP_CALCULATOR_URL . 'assets/css/admin.css',
+            array(),
+            WP_CALCULATOR_VERSION
+        );
+
+        wp_enqueue_script(
+            'wp-calculator-admin',
+            WP_CALCULATOR_URL . 'assets/js/admin.js',
+            array(),
+            WP_CALCULATOR_VERSION,
+            true
+        );
+
+         = wood_calc_get_stored_data();
+         = isset(['settings']) && is_array(['settings']) ? ['settings'] : array();
+         = isset(['lang']) && in_array(['lang'], array('uk', 'en'), true) ? ['lang'] : 'uk';
+         = isset(['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', ['accent_color']) ? ['accent_color'] : '#95b504';
+         = !empty(['wipe_on_uninstall']);
+
+         = array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce'    => wp_create_nonce('wood_calc_nonce'),
+            'data'     => ,
+            'settings' => array(
+                'lang' => ,
+                'accent_color' => ,
+                'wipe_on_uninstall' => 
+            ),
+            'version'  => WP_CALCULATOR_VERSION
+        );
+
+        wp_add_inline_script(
+            'wp-calculator-admin',
+            'window.WOOD_CALC_BOOTSTRAP = ' . wp_json_encode() . ';',
+            'before'
+        );
+    }
+
+    public function render_admin_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Недостатньо прав для доступу до цієї сторінки.');
+        }
+
+         = wood_calc_get_stored_data();
+         = isset(['settings']) && is_array(['settings']) ? ['settings'] : array();
+         = isset(['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', ['accent_color']) ? ['accent_color'] : '#95b504';
+         = wp_create_nonce('wood_calc_nonce');
+        ?>
+        <div class="wrap">
+            <input type="hidden" id="wood-calc-nonce" value="<?php echo esc_attr(); ?>">
+            <div style="--tc-green: <?php echo esc_attr(); ?>;">
+                <div id="wood-calculator-app" class="tc-app-wrapper" style="--tc-green: <?php echo esc_attr($accent_color); ?>;">
+
+        <div class="tc-tab-bar no-invoice">
+            <button type="button" class="tc-tab-btn active" id="tab-nav-calc" onclick="switchWcTab('calc')">
+                <span>🧮</span> <span data-i18n="tab_calc">Калькулятор</span>
+            </button>
+            <button type="button" class="tc-tab-btn" id="tab-nav-appearance" onclick="switchWcTab('appearance')">
+                <span>🎨</span> <span data-i18n="tab_appearance">Оформлення</span>
+            </button>
+            <button type="button" class="tc-tab-btn" id="tab-nav-settings" onclick="switchWcTab('settings')">
+                <span>⚙️</span> <span data-i18n="tab_settings">Налаштування</span>
+            </button>
+        </div>
+
+        <!-- ВКЛАДКА 1: КАЛЬКУЛЯТОР -->
+        <div id="wc-tab-pane-calc" class="wc-tab-pane">
+            <div class="tc-header no-invoice">
+                <h1 data-i18n="header_title">🛠️ Розрахунок вартості виробів</h1>
+                <div class="tc-header-actions">
+                    <span id="wc-status" style="font-size:12px; color:#64748b;" data-i18n="syncing">● Синхронізація...</span>
+                    <button type="button" class="btn btn-dark" style="height:32px; font-size:12px; padding:4px 10px;" onclick="downloadDataBackup()" data-i18n="btn_backup">💾 Бекап</button>
+                </div>
+            </div>
+
+            <div class="tc-layout">
+                <div class="tc-main-col">
+                    
+                    <!-- 1. ШВИДКИЙ КАЛЬКУЛЯТОР -->
+                    <div class="tc-card no-invoice">
+                        <h2 data-i18n="sec1_title">1. Швидкий калькулятор вартості</h2>
+                        <div class="grid-calc">
+                            <div class="full-mobile">
+                                <label data-i18n="lbl_calc_mat">Матеріал (тариф за 1 см²)</label>
+                                <select id="calc-mat" onchange="runQuickCalc()"></select>
+                            </div>
+                            <div>
+                                <label data-i18n="lbl_calc_len">Довжина (мм)</label>
+                                <input type="number" id="calc-len" placeholder="500" oninput="runQuickCalc()">
+                            </div>
+                            <div>
+                                <label data-i18n="lbl_calc_width">Ширина (мм)</label>
+                                <input type="number" id="calc-width" placeholder="300" oninput="runQuickCalc()">
+                            </div>
+                            <div class="full-mobile">
+                                <button type="button" class="btn btn-green" style="width:100%;" onclick="sendToSaveForm()" data-i18n="btn_send_to_form">Внести у виріб ↓</button>
+                            </div>
+                        </div>
+                        <div class="calc-result-box">
+                            <div>
+                                <span style="font-size:12px; color:#64748b;" data-i18n="res_area">Розрахована площа:</span>
+                                <strong id="res-area" style="font-size:15px; margin-left:4px;">0 см²</strong>
+                            </div>
+                            <div>
+                                <span style="font-size:12px; color:#64748b;" data-i18n="res_price">Ціна за 1 шт:</span>
+                                <strong id="res-price" style="font-size:18px; color:var(--tc-dark); margin-left:6px;">0.00 грн</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. ДОДАТИ ВИРІБ У СПИСОК -->
+                    <div class="tc-card no-invoice">
+                        <h2 data-i18n="sec2_title">2. Додати виріб у список</h2>
+                        <div class="grid-add-product">
+                            <div>
+                                <label data-i18n="lbl_add_name">Назва виробу</label>
+                                <input type="text" id="add-name" placeholder="напр. Дошка дубова">
+                            </div>
+                            <div>
+                                <label data-i18n="lbl_add_mat">Оберіть матеріал</label>
+                                <select id="add-mat"></select>
+                            </div>
+                            <div>
+                                <label data-i18n="lbl_calc_len">Довжина (мм)</label>
+                                <input type="number" id="add-len" placeholder="мм">
+                            </div>
+                            <div>
+                                <label data-i18n="lbl_calc_width">Ширина (мм)</label>
+                                <input type="number" id="add-width" placeholder="мм">
+                            </div>
+                            <div>
+                                <label data-i18n="lbl_add_price">Ціна/шт (грн)</label>
+                                <input type="number" step="0.01" id="add-price" placeholder="0.00">
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-dark" onclick="addCustomProduct()" data-i18n="btn_add_save">+ Зберегти</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. СПИСОК ВИРОБІВ / БЛОК НАКЛАДНОЇ -->
+                    <div id="invoice-print-card" class="tc-card" style="margin-bottom:0;">
+                        <div class="invoice-header-box">
+                            <div>
+                                <h2 style="margin:0; font-size:22px; color:var(--tc-dark); letter-spacing:0.5px;" data-i18n="invoice_title">РОЗРАХУНОК ЗАМОВЛЕННЯ</h2>
+                                <div style="font-size:13px; color:#64748b; margin-top:4px;" id="inv-date"></div>
+                            </div>
+                        </div>
+
+                        <h2 class="no-invoice tc-sec3-header">
+                            <span data-i18n="sec3_title">3. Список виробів</span>
+                            <div class="tc-sec3-actions">
+                                <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; margin:0;">
+                                    <input type="checkbox" id="filter-selected" onchange="renderItems()">
+                                    <span data-i18n="chk_hide_unselected">Сховати невиділені</span>
+                                </label>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="toggleSelectAll(true)" data-i18n="btn_select_all">Виділити всі</button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="toggleSelectAll(false)" data-i18n="btn_deselect_all">Зняти всі</button>
+                            </div>
+                        </h2>
+
+                        <!-- Вибір колонок для накладної -->
+                        <div class="no-invoice" style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin-bottom:12px; border:1px solid #e2e8f0; display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                            <strong style="font-size:12px; color:#475569;" data-i18n="inv_cols_title">Колонки для накладної:</strong>
+                            <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
+                                <input type="checkbox" id="col-toggle-photo" checked onchange="toggleColumnVisibility('photo', this.checked)"> <span data-i18n="col_photo">Фото</span>
+                            </label>
+                            <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
+                                <input type="checkbox" id="col-toggle-mat" checked onchange="toggleColumnVisibility('mat', this.checked)"> <span data-i18n="col_material">Матеріал</span>
+                            </label>
+                            <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
+                                <input type="checkbox" id="col-toggle-dims" checked onchange="toggleColumnVisibility('dims', this.checked)"> <span data-i18n="col_dims">Розміри</span>
+                            </label>
+                            <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
+                                <input type="checkbox" id="col-toggle-price" checked onchange="toggleColumnVisibility('price', this.checked)"> <span data-i18n="col_price_pc">Ціна / 1 шт</span>
+                            </label>
+                            <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
+                                <input type="checkbox" id="col-toggle-qty" checked onchange="toggleColumnVisibility('qty', this.checked)"> <span data-i18n="col_qty">К-сть</span>
+                            </label>
+                            <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
+                                <input type="checkbox" id="col-toggle-sum" checked onchange="toggleColumnVisibility('sum', this.checked)"> <span data-i18n="col_sum">Сума</span>
+                            </label>
+                        </div>
+
+                        <!-- Таблиця виробів -->
+                        <div style="overflow-x:auto;">
+                            <div class="tc-table-responsive">
+                        <table class="tc-table" id="items-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40px;" class="no-invoice"></th>
+                                        <th style="width:30px;"><input type="checkbox" id="select-all-top" onchange="toggleSelectAll(this.checked)"></th>
+                                        <th class="col-photo-header" style="width:50px;" data-i18n="col_photo">Фото</th>
+                                        <th data-i18n="lbl_add_name">Назва виробу</th>
+                                        <th class="col-mat-header" data-i18n="col_material">Матеріал</th>
+                                        <th class="col-dims-header" data-i18n="col_dims">Розміри</th>
+                                        <th class="col-price-header" data-i18n="col_price_pc">Ціна / 1 шт</th>
+                                        <th class="col-qty-header" style="width:90px;" data-i18n="col_qty">К-сть</th>
+                                        <th class="col-sum-header" style="text-align:right;" data-i18n="col_sum">Сума</th>
+                                        <th style="width:130px; text-align:right;" class="no-invoice" data-i18n="col_actions">Дії</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="items-tbody"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="summary-bar">
+                            <div style="font-size:13px; color:#475569;">
+                                <span data-i18n="summary_selected">Обрано виробів:</span> <strong id="sum-items-count">0</strong> | 
+                                <span data-i18n="summary_qty">Загальна к-сть:</span> <strong id="sum-total-qty">0</strong> <span data-i18n="pcs">шт</span>
+                            </div>
+                            <div class="summary-total">
+                                <span data-i18n="summary_sum">Загальна сума:</span> <span id="sum-grand-total">0.00</span> <span data-i18n="curr">грн</span>
+                            </div>
+                        </div>
+
+                        <div class="no-invoice" style="margin-top:16px; text-align:right;">
+                            <button type="button" class="btn btn-green" onclick="enterInvoiceMode()" data-i18n="btn_invoice_mode">📸 Накладна для скріна</button>
+                        </div>
+                    </div>
+
+                    <div id="exit-invoice-container" style="display:none; margin-top:20px; text-align:center;">
+                        <button type="button" class="btn btn-dark" onclick="exitInvoiceMode()" style="padding:10px 24px; font-size:14px;" data-i18n="btn_exit_invoice">← Вийти з режиму накладної</button>
+                    </div>
+
+                </div>
+
+                <!-- ПРАВИЙ СТОВПЧИК: Довідник матеріалів -->
+                <div class="tc-side-col no-invoice">
+                    <div class="tc-card">
+                        <h2 data-i18n="sec_materials_title">🪵 Довідник матеріалів</h2>
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <div>
+                                <label data-i18n="lbl_mat_name">Назва матеріалу</label>
+                                <input type="text" id="mat-name" placeholder="напр. Дуб селект">
+                            </div>
+                            <div>
+                                <label data-i18n="lbl_mat_rate">Тариф за 1 см² (грн)</label>
+                                <input type="number" step="0.00001" id="mat-price" placeholder="0.20123">
+                            </div>
+                            <button type="button" class="btn btn-dark" onclick="addNewMaterial()" data-i18n="btn_mat_add">+ Додати</button>
+                        </div>
+
+                        <div class="tc-table-responsive">
+                        <table class="tc-table" style="margin-top:16px;">
+                            <thead>
+                                <tr>
+                                    <th data-i18n="col_material">Порода</th>
+                                    <th>грн/см²</th>
+                                    <th style="width:70px; text-align:right;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="materials-tbody"></tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- ВКЛАДКА: ОФОРМЛЕННЯ -->
+        <div id="wc-tab-pane-appearance" class="wc-tab-pane" style="display:none;">
+            <div class="tc-card">
+                <h2 data-i18n="appearance_title">🎨 Зовнішній вигляд</h2>
+                <div style="max-width:650px;">
+                    <label style="font-weight:700; font-size:14px; margin-bottom:8px; display:block;" data-i18n="lbl_accent_color">Акцентний колір кнопок та активних елементів</label>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;" id="wc-color-presets"></div>
+                    <div style="display:flex; gap:12px; align-items:center; margin-top:16px;">
+                        <label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600; margin:0;">
+                            <span data-i18n="lbl_custom_color">Довільний колір:</span>
+                            <input type="color" id="wc-custom-color" style="width:48px; height:36px; padding:2px; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer;" onchange="setAccentColor(this.value)">
+                        </label>
+                    </div>
+                    <p style="font-size:13px; color:#64748b; margin-top:14px; line-height:1.6;" data-i18n="appearance_desc">
+                        Обраний колір застосовується до кнопок, чекбоксів, підсвітки та акцентних рамок інтерфейсу. Вибір зберігається автоматично.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 2: НАЛАШТУВАННЯ ТА ОНОВЛЕННЯ -->
+        <div id="wc-tab-pane-settings" class="wc-tab-pane" style="display:none;">
+            <div style="display:flex; flex-direction:column; gap:20px;">
+                <!-- Блок мови -->
+                <div class="tc-card">
+                    <h2 data-i18n="settings_title">⚙️ Налаштування калькулятора</h2>
+                    <div style="max-width:550px; padding:10px 0;">
+                        <label style="font-weight:700; font-size:14px; margin-bottom:8px; display:block;" data-i18n="settings_lang">Мова інтерфейсу</label>
+                        <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-top:10px;">
+                            <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; background:#fff; border:1px solid #cbd5e1; padding:10px 16px; border-radius:8px; font-weight:600;">
+                                <input type="radio" name="wc_lang_choice" value="uk" id="wc-lang-uk" onchange="setWcLanguage('uk')">
+                                <span>🇺🇦 Українська</span>
+                            </label>
+                            <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; background:#fff; border:1px solid #cbd5e1; padding:10px 16px; border-radius:8px; font-weight:600;">
+                                <input type="radio" name="wc_lang_choice" value="en" id="wc-lang-en" onchange="setWcLanguage('en')">
+                                <span>🇬🇧 English</span>
+                            </label>
+                        </div>
+                        <p style="font-size:13px; color:#64748b; margin-top:14px; line-height:1.6;" data-i18n="settings_lang_desc">
+                            Обрана мова зберігається автоматично та використовується для калькулятора, каталогу і накладної.
+                        </p>
+
+                        <div style="margin-top:24px; padding-top:16px; border-top:1px solid #e2e8f0;">
+                            <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; font-size:13px; margin:0;">
+                                <input type="checkbox" id="wc-wipe-on-uninstall" onchange="toggleWipeOnUninstall(this.checked)">
+                                <span data-i18n="lbl_wipe_uninstall">Видаляти всі дані та налаштування при повному видаленні плагіна</span>
+                            </label>
+                            <p style="font-size:12px; color:#94a3b8; margin:6px 0 0 26px;" data-i18n="desc_wipe_uninstall">
+                                Якщо вимкнено — ваші створені матеріали, каталог виробів та налаштування збережуться навіть після деінсталяції плагіна.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Блок оновлень з GitHub -->
+                <div class="tc-card">
+                    <h2 data-i18n="updater_title">🚀 Оновлення плагіна з GitHub</h2>
+                    <div style="max-width:650px;">
+                        <div style="display:flex; align-items:center; gap:16px; margin-bottom:14px;">
+                            <span style="font-size:14px; color:#475569;">
+                                <strong data-i18n="lbl_current_ver">Поточна версія:</strong> <code>v<?php echo esc_html(WP_CALCULATOR_VERSION); ?></code>
+                            </span>
+                            <span style="font-size:14px; color:#475569;" id="wc-latest-ver-box"></span>
+                        </div>
+
+                        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                            <button type="button" class="btn btn-dark" id="btn-check-update" onclick="checkGitHubUpdate()">
+                                🔍 <span data-i18n="btn_check_update">Перевірити оновлення</span>
+                            </button>
+                            <button type="button" class="btn btn-green" id="btn-run-update" style="display:none;" onclick="runGitHubUpdate()">
+                                ⚡ <span data-i18n="btn_apply_update">Оновити плагін зараз</span>
+                            </button>
+                            <span id="update-status-msg" style="font-size:13px; color:#64748b;"></span>
+                        </div>
+
+                        <div id="update-changelog-box" style="display:none; margin-top:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px;">
+                            <strong style="font-size:13px; color:var(--tc-dark);" data-i18n="lbl_changelog">Зміни в релізі:</strong>
+                            <div id="update-changelog-text" style="font-size:13px; color:#475569; margin-top:6px; line-height:1.5;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- МОДАЛЬНЕ ВІКНО РЕДАГУВАННЯ ВИРОБУ -->
+        <div id="modal-edit-product" class="modal-backdrop">
+            <div class="modal-content">
+                <h3 style="margin-top:0; font-size:18px; color:var(--tc-dark);" data-i18n="modal_edit_prod_title">Редагувати виріб</h3>
+                <input type="hidden" id="edit-prod-id">
+                <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
+                    <div>
+                        <label data-i18n="lbl_add_name">Назва виробу</label>
+                        <input type="text" id="edit-prod-name">
+                    </div>
+                    <div>
+                        <label data-i18n="lbl_add_mat">Матеріал</label>
+                        <select id="edit-prod-mat"></select>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <div>
+                            <label data-i18n="lbl_calc_len">Довжина (мм)</label>
+                            <input type="number" id="edit-prod-len">
+                        </div>
+                        <div>
+                            <label data-i18n="lbl_calc_width">Ширина (мм)</label>
+                            <input type="number" id="edit-prod-width">
+                        </div>
+                    </div>
+                    <div>
+                        <label data-i18n="lbl_add_price">Ціна за 1 шт (грн)</label>
+                        <input type="number" step="0.01" id="edit-prod-price">
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                        <button type="button" class="btn btn-outline" onclick="closeEditProductModal()" data-i18n="btn_cancel">Скасувати</button>
+                        <button type="button" class="btn btn-green" onclick="saveEditedProduct()" data-i18n="btn_save">Зберегти зміни</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- МОДАЛЬНЕ ВІКНО РЕДАГУВАННЯ МАТЕРІАЛУ -->
+        <div id="modal-edit-material" class="modal-backdrop">
+            <div class="modal-content">
+                <h3 style="margin-top:0; font-size:18px; color:var(--tc-dark);" data-i18n="modal_edit_mat_title">Редагувати матеріал</h3>
+                <input type="hidden" id="edit-mat-id">
+                <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
+                    <div>
+                        <label data-i18n="lbl_mat_name">Назва матеріалу</label>
+                        <input type="text" id="edit-mat-name">
+                    </div>
+                    <div>
+                        <label data-i18n="lbl_mat_rate">Тариф за 1 см² (грн)</label>
+                        <input type="number" step="0.00001" id="edit-mat-price">
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                        <button type="button" class="btn btn-outline" onclick="closeEditMaterialModal()" data-i18n="btn_cancel">Скасувати</button>
+                        <button type="button" class="btn btn-green" onclick="saveEditedMaterial()" data-i18n="btn_save">Зберегти зміни</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- МОДАЛЬНЕ ВІКНО ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ -->
+        <div id="modal-confirm-delete" class="modal-backdrop">
+            <div class="modal-content" style="max-width:400px; text-align:center;">
+                <div style="font-size:40px; margin-bottom:10px;">⚠️</div>
+                <h3 style="margin:0 0 10px 0; font-size:18px; color:var(--tc-dark);" data-i18n="modal_del_title">Підтвердження видалення</h3>
+                <p style="font-size:13px; color:#64748b; margin-bottom:20px;" data-i18n="modal_del_text">
+                    Ви дійсно бажаєте видалити цей елемент? Цю дію неможливо буде скасувати.
+                </p>
+                <div style="display:flex; justify-content:center; gap:12px;">
+                    <button type="button" class="btn btn-outline" onclick="closeConfirmModal()" data-i18n="btn_cancel">Скасувати</button>
+                    <button type="button" class="btn btn-danger" id="confirm-del-btn" data-i18n="btn_delete">Видалити</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+            </div>
+        </div>
+        <?php
+    }
+}
