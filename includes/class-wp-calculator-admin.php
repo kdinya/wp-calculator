@@ -5,8 +5,8 @@ if (!defined('ABSPATH')) {
 
 class WpCalculatorAdmin {
     public function __construct() {
-        add_action('admin_menu', array(, 'add_admin_menu'));
-        add_action('admin_enqueue_scripts', array(, 'enqueue_assets'));
+        add_action('admin_menu', array($this, 'add_admin_menu'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_assets'));
     }
 
     public function add_admin_menu() {
@@ -15,14 +15,14 @@ class WpCalculatorAdmin {
             'Калькулятор виробів',
             'manage_options',
             'wp-calculator',
-            array(, 'render_admin_page'),
+            array($this, 'render_admin_page'),
             'dashicons-calculator',
             30
         );
     }
 
-    public function enqueue_assets() {
-        if (empty() || strpos(, 'wp-calculator') === false) {
+    public function enqueue_assets($hook) {
+        if (empty($hook) || strpos($hook, 'wp-calculator') === false) {
             return;
         }
 
@@ -41,27 +41,27 @@ class WpCalculatorAdmin {
             true
         );
 
-         = wood_calc_get_stored_data();
-         = isset(['settings']) && is_array(['settings']) ? ['settings'] : array();
-         = isset(['lang']) && in_array(['lang'], array('uk', 'en'), true) ? ['lang'] : 'uk';
-         = isset(['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', ['accent_color']) ? ['accent_color'] : '#95b504';
-         = !empty(['wipe_on_uninstall']);
+        $stored_data = wood_calc_get_stored_data();
+        $saved_settings = isset($stored_data['settings']) && is_array($stored_data['settings']) ? $stored_data['settings'] : array();
+        $current_lang = isset($saved_settings['lang']) && in_array($saved_settings['lang'], array('uk', 'en'), true) ? $saved_settings['lang'] : 'uk';
+        $accent_color = isset($saved_settings['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', $saved_settings['accent_color']) ? $saved_settings['accent_color'] : '#95b504';
+        $wipe_on_uninstall = !empty($saved_settings['wipe_on_uninstall']);
 
-         = array(
+        $bootstrap_data = array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('wood_calc_nonce'),
-            'data'     => ,
+            'data'     => $stored_data,
             'settings' => array(
-                'lang' => ,
-                'accent_color' => ,
-                'wipe_on_uninstall' => 
+                'lang' => $current_lang,
+                'accent_color' => $accent_color,
+                'wipe_on_uninstall' => $wipe_on_uninstall
             ),
             'version'  => WP_CALCULATOR_VERSION
         );
 
         wp_add_inline_script(
             'wp-calculator-admin',
-            'window.WOOD_CALC_BOOTSTRAP = ' . wp_json_encode() . ';',
+            'window.WOOD_CALC_BOOTSTRAP = ' . wp_json_encode($bootstrap_data) . ';',
             'before'
         );
     }
@@ -71,14 +71,14 @@ class WpCalculatorAdmin {
             wp_die('Недостатньо прав для доступу до цієї сторінки.');
         }
 
-         = wood_calc_get_stored_data();
-         = isset(['settings']) && is_array(['settings']) ? ['settings'] : array();
-         = isset(['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', ['accent_color']) ? ['accent_color'] : '#95b504';
-         = wp_create_nonce('wood_calc_nonce');
+        $stored_data = wood_calc_get_stored_data();
+        $saved_settings = isset($stored_data['settings']) && is_array($stored_data['settings']) ? $stored_data['settings'] : array();
+        $accent_color = isset($saved_settings['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', $saved_settings['accent_color']) ? $saved_settings['accent_color'] : '#95b504';
+        $nonce = wp_create_nonce('wood_calc_nonce');
         ?>
 <div class="wrap">
-            <input type="hidden" id="wood-calc-nonce" value="<?php echo esc_attr(); ?>">
-            <div style="--tc-green: <?php echo esc_attr(); ?>;">
+            <input type="hidden" id="wood-calc-nonce" value="<?php echo esc_attr($nonce); ?>">
+            <div style="--tc-green: <?php echo esc_attr($nonce); ?>;">
                 <div id="wood-calculator-app" class="tc-app-wrapper" style="--tc-green: <?php echo esc_attr($accent_color); ?>;">
 
         <div class="tc-tab-bar no-invoice">
