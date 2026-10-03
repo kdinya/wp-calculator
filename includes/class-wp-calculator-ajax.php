@@ -17,11 +17,11 @@ function wood_calc_get_stored_data() {
     // Read legacy records first and the canonical record last so current settings
     // and data always take precedence over historical backups.
     $storage_keys = array(
+        'wood_calc_store_v3',
         'wood_calc_store_v4',
         'wood_calc_store_backup',
         'wood_calc_store_v2',
         'wood_calc_store',
-        'wood_calc_store_v3',
     );
 
     $merged_materials = array();
@@ -55,7 +55,9 @@ function wood_calc_get_stored_data() {
         if (!empty($stored['settings']) && is_array($stored['settings'])) {
             foreach ($stored['settings'] as $setting_key => $setting_value) {
                 if (array_key_exists($setting_key, $saved_settings)) {
-                    $saved_settings[$setting_key] = $setting_value;
+                    if ($key === 'wood_calc_store_v3' || empty($primary_stored['settings']) || !array_key_exists($setting_key, $primary_stored['settings'])) {
+                        $saved_settings[$setting_key] = $setting_value;
+                    }
                 }
             }
         }

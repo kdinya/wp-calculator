@@ -764,7 +764,7 @@
 
             if (addMat && matName) {
                 for (let i = 0; i < addMat.options.length; i++) {
-                    if (addMat.options[i].text === matName) {
+                    if (addMat.options[i].getAttribute('data-name') === matName) {
                         addMat.selectedIndex = i;
                         break;
                     }
@@ -1270,9 +1270,8 @@
                                 '</div>' +
                             '</div>' +
                             '<div style="display:flex; gap:6px;">' +
-                                (isInInv ?
-                                    '<button type="button" class="btn btn-outline btn-sm" onclick="setItemQty(\' + it.id + \', ' + (q + 1) + '); openAddFromCatalogModal();" title="Збільшити кількість">+ 1 шт</button>' :
-                                    '<button type="button" class="btn btn-green btn-sm" onclick="addToInvoice(\'' + it.id + '\'); openAddFromCatalogModal();">' + t('btn_add_to_inv') + '</button>'
+                                (!isInInv ?
+                                    '<button type="button" class="btn btn-green btn-sm" onclick="addToInvoice(\'' + escapeHtml(it.id) + '\'); openAddFromCatalogModal();">' + t('btn_add_to_inv') + '</button>' : ''
                                 ) +
                             '</div>' +
                         '</div>';

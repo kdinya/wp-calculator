@@ -3,7 +3,7 @@
  * Plugin Name: WP Calculator
  * Plugin URI: https://github.com/kdinya/wp-calculator
  * Description: Universal product and material cost calculator with materials directory, invoice generation, multiple export options, customizable styling, and reliable GitHub auto-updates.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: kdinya
  * Author URI: https://github.com/kdinya
  * Text Domain: wp-calculator
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('WP_CALCULATOR_VERSION', '1.0.0');
+define('WP_CALCULATOR_VERSION', '1.0.1');
 define('WP_CALCULATOR_FILE', __FILE__);
 define('WP_CALCULATOR_PATH', plugin_dir_path(__FILE__));
 define('WP_CALCULATOR_URL', plugin_dir_url(__FILE__));
