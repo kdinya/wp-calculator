@@ -678,7 +678,7 @@
                             <td>${parseFloat(m.price)}</td>
                             <td style="text-align:right;">
                                 <button type="button" class="btn btn-outline btn-sm" onclick="openEditMaterialModal(${idx})" title="${t('modal_edit_mat_title')}">✏️</button>
-                                <button type="button" class="btn btn-danger btn-sm" onclick="askDeleteMaterial(${idx})" title="${t('btn_delete')}">🗑️</button>
+                                <button type="button" class="btn-delete-transp" onclick="askDeleteMaterial(${idx})" title="${t('btn_delete')}">🗑️</button>
                             </td>
                         </tr>
                     `).join('');
@@ -1199,11 +1199,15 @@
             const tbody = document.getElementById('items-tbody');
             if (!tbody) return;
 
+            const isInvoiceMode = document.body.classList.contains('invoice-mode');
             const hideUnselected = document.getElementById('filter-selected')?.checked || false;
             // Invoice items: only items where in_invoice is true (default true)
             let invoiceItems = items.filter(it => it.in_invoice !== false);
             let displayItems = invoiceItems;
-            if (hideUnselected) {
+            if (isInvoiceMode) {
+                // In invoice mode: only show selected (checked) items
+                displayItems = invoiceItems.filter(it => it.selected !== false);
+            } else if (hideUnselected) {
                 displayItems = invoiceItems.filter(it => it.selected);
             }
 
@@ -1224,7 +1228,7 @@
                         <td class="no-invoice" style="text-align:center;">
                             <span class="wc-drag-handle" title="Перетягнути для зміни порядку">⠿</span>
                         </td>
-                        <td>
+                        <td class="no-invoice">
                             <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="setItemSelected('${item.id}', this.checked)">
                         </td>
                         <td>
@@ -1242,7 +1246,7 @@
                         <td class="no-invoice" style="text-align:right; white-space:nowrap;">
                             <button type="button" class="btn btn-outline btn-sm" onclick="openCopyProductModal('${item.id}', 'invoice')" title="Дублювати в накладній">📋</button>
                             <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="Редагувати">✏️</button>
-                            <button type="button" class="btn btn-danger btn-sm" onclick="askRemoveFromInvoice('${item.id}')" title="Вилучити з накладної">🗑️</button>
+                            <button type="button" class="btn-delete-transp" onclick="askRemoveFromInvoice('${item.id}')" title="Вилучити з накладної">🗑️</button>
                         </td>
                     </tr>
                 `;
@@ -1350,12 +1354,14 @@
                     day: 'numeric'
                 });
             }
+            renderItems();
             const exitBtn = document.getElementById('exit-invoice-container');
             if (exitBtn) exitBtn.style.display = 'block';
         };
 
         window.exitInvoiceMode = function() {
             document.body.classList.remove('invoice-mode');
+            renderItems();
             const exitBtn = document.getElementById('exit-invoice-container');
             if (exitBtn) exitBtn.style.display = 'none';
         };

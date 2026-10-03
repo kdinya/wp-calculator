@@ -343,6 +343,32 @@ class WpCalculatorAdmin {
                                 </div>
                             </div>
 
+                            
+                            <!-- Панель дій та експорту в режимі накладної -->
+                            <div class="invoice-actions-bar">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="downloadInvoicePng()" title="Завантажити накладну як картинку PNG" data-i18n="btn_download_png">
+                                    <span>🖼️</span> <?php echo esc_html($t['btn_download_png']); ?>
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="copyInvoicePng()" title="Скопіювати зображення в буфер для вставки в чат" data-i18n="btn_copy_png">
+                                    <span>📋</span> <?php echo esc_html($t['btn_copy_png']); ?>
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="downloadInvoicePdf()" title="Завантажити накладну у форматі PDF" data-i18n="btn_download_pdf">
+                                    <span>📄</span> <?php echo esc_html($t['btn_download_pdf']); ?>
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="downloadInvoiceExcel()" title="Експортувати замовлення в таблицю Excel" data-i18n="btn_download_excel">
+                                    <span>📊</span> <?php echo esc_html($t['btn_download_excel']); ?>
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm" id="btn-share-wc" onclick="shareInvoice()" title="Поділитися накладною через будь-який додаток" data-i18n="btn_share_invoice">
+                                    <span>📲</span> <?php echo esc_html($t['btn_share_invoice']); ?>
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="emailInvoice()" title="Надіслати замовлення по email" data-i18n="btn_email_invoice">
+                                    <span>✉️</span> <?php echo esc_html($t['btn_email_invoice']); ?>
+                                </button>
+                                <button type="button" class="btn btn-dark btn-sm" onclick="exitInvoiceMode()" data-i18n="btn_exit_invoice" style="margin-left:auto;">
+                                    <?php echo esc_html($t['btn_exit_invoice']); ?>
+                                </button>
+                            </div>
+
                             <!-- 3. СПИСОК ВИРОБІВ / БЛОК НАКЛАДНОЇ -->
                             <div id="invoice-print-card" class="tc-card" style="margin-bottom:0;">
                                 <div class="invoice-header-box">
@@ -369,9 +395,6 @@ class WpCalculatorAdmin {
                                 <div class="no-invoice" style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin-bottom:12px; border:1px solid #e2e8f0; display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
                                     <strong style="font-size:12px; color:#475569;" data-i18n="inv_cols_title"><?php echo esc_html($t['inv_cols_title']); ?></strong>
                                     <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
-                                        <input type="checkbox" id="col-toggle-photo" checked onchange="toggleColumnVisibility('photo', this.checked)"> <span data-i18n="col_photo"><?php echo esc_html($t['col_photo']); ?></span>
-                                    </label>
-                                    <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
                                         <input type="checkbox" id="col-toggle-mat" checked onchange="toggleColumnVisibility('mat', this.checked)"> <span data-i18n="col_material"><?php echo esc_html($t['col_material']); ?></span>
                                     </label>
                                     <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
@@ -395,8 +418,7 @@ class WpCalculatorAdmin {
                                             <thead>
                                                 <tr>
                                                     <th style="width:40px;" class="no-invoice"></th>
-                                                    <th style="width:30px;"><input type="checkbox" id="select-all-top" onchange="toggleSelectAll(this.checked)"></th>
-                                                    <th class="col-photo-header" style="width:50px;" data-i18n="col_photo"><?php echo esc_html($t['col_photo']); ?></th>
+                                                    <th style="width:30px;" class="no-invoice"><input type="checkbox" id="select-all-top" onchange="toggleSelectAll(this.checked)"></th>
                                                     <th data-i18n="lbl_add_name"><?php echo esc_html($t['lbl_add_name']); ?></th>
                                                     <th class="col-mat-header" data-i18n="col_material"><?php echo esc_html($t['col_material']); ?></th>
                                                     <th class="col-dims-header" data-i18n="col_dims"><?php echo esc_html($t['col_dims']); ?></th>
@@ -485,7 +507,6 @@ class WpCalculatorAdmin {
                                 <thead>
                                     <tr>
                                         <th style="width:40px;"></th>
-                                        <th style="width:50px;" data-i18n="col_photo"><?php echo esc_html($t['col_photo']); ?></th>
                                         <th data-i18n="lbl_add_name"><?php echo esc_html($t['lbl_add_name']); ?></th>
                                         <th data-i18n="col_material"><?php echo esc_html($t['col_material']); ?></th>
                                         <th data-i18n="col_dims"><?php echo esc_html($t['col_dims']); ?></th>

@@ -265,6 +265,27 @@
                 background: var(--tc-green-dark);
                 color: #ffffff;
             }
+            
+            .btn-delete-transp {
+                background: transparent !important;
+                border: 1px solid transparent !important;
+                color: var(--tc-danger) !important;
+                padding: 4px 6px !important;
+                cursor: pointer !important;
+                font-size: 15px !important;
+                line-height: 1 !important;
+                border-radius: 4px !important;
+                box-shadow: none !important;
+                transition: background 0.15s ease, opacity 0.15s ease !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            .btn-delete-transp:hover {
+                background: rgba(220, 38, 38, 0.12) !important;
+                opacity: 0.9;
+            }
+
             .btn-danger {
                 background: var(--tc-danger);
                 color: #ffffff;
@@ -366,6 +387,14 @@
 
             .invoice-actions-bar {
                 display: none;
+                gap: 8px;
+                flex-wrap: wrap;
+                align-items: center;
+                margin-bottom: 20px;
+                padding: 12px 16px;
+                background: #f8fafc;
+                border-radius: 8px;
+                border: 1px solid var(--tc-border);
             }
             .invoice-mode .invoice-actions-bar {
                 display: flex !important;
