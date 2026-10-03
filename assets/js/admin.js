@@ -48,13 +48,13 @@
                 btn_send_to_form: "Внести у виріб ↓",
                 res_area: "Розрахована площа:",
                 res_price: "Ціна за 1 шт:",
-                sec2_title: "2. Додати виріб у список",
+                sec2_title: "Додати виріб у список",
+                btn_add_product: "Додати виріб",
                 lbl_add_name: "Назва виробу",
                 lbl_add_mat: "Оберіть матеріал",
                 lbl_add_price: "Ціна/шт (грн)",
                 btn_add_save: "+ Зберегти",
                 sec3_title: "3. Список виробів",
-                chk_hide_unselected: "Сховати невиділені",
                 btn_select_all: "Виділити всі",
                 btn_deselect_all: "Зняти всі",
                 inv_cols_title: "Колонки для накладної:",
@@ -110,7 +110,7 @@
                 chk_add_to_invoice: "Додати в накладну",
                 btn_add_from_catalog: "+ Додати з каталогу",
                 btn_add_to_inv: "+ В накладну",
-                in_invoice_badge: "В накладній ✓",
+                in_invoice_badge: "В накладній",
                 btn_remove_from_inv: "Прибрати з накладної",
                 modal_catalog_title: "Додати вироби з каталогу в накладну",
                 no_catalog_items: "Немає створених виробів у каталозі",
@@ -124,7 +124,7 @@
                 copied_image_success: "Зображення скопійовано в буфер обміну!",
                 copied_image_failed: "Не вдалося скопіювати зображення.",
                 all_items_in_invoice: "Усі вироби з каталогу вже є в накладній!",
-                catalog_status_in_inv: "В накладній ✓",
+                catalog_status_in_inv: "В накладній",
                 catalog_status_not_in_inv: "Не в накладній",
                 modal_del_title: "Підтвердження видалення",
                 modal_del_text: "Ви дійсно бажаєте видалити цей елемент? Цю дію неможливо буде скасувати.",
@@ -152,13 +152,13 @@
                 btn_send_to_form: "Add to Product Form ↓",
                 res_area: "Calculated Area:",
                 res_price: "Unit Price:",
-                sec2_title: "2. Add Product to List",
+                sec2_title: "Add Product to List",
+                btn_add_product: "Add Product",
                 lbl_add_name: "Product Name",
                 lbl_add_mat: "Select Material",
                 lbl_add_price: "Price/unit (UAH)",
                 btn_add_save: "+ Save",
                 sec3_title: "3. Product List",
-                chk_hide_unselected: "Hide Unselected",
                 btn_select_all: "Select All",
                 btn_deselect_all: "Deselect All",
                 inv_cols_title: "Columns for Invoice:",
@@ -208,6 +208,29 @@
                 update_success: "Plugin successfully updated! Please refresh the page.",
                 modal_edit_prod_title: "Edit Product",
                 modal_edit_mat_title: "Edit Material",
+                tab_catalog: "All Products",
+                catalog_title: "📋 All Created Products Catalog",
+                catalog_desc: "All your created products are stored here. You can add them to the invoice, edit, duplicate or reorder by dragging.",
+                chk_add_to_invoice: "Add to invoice",
+                btn_add_from_catalog: "+ Add from catalog",
+                btn_add_to_inv: "+ To invoice",
+                in_invoice_badge: "In invoice",
+                btn_remove_from_inv: "Remove from invoice",
+                modal_catalog_title: "Add Products from Catalog to Invoice",
+                no_catalog_items: "No products created in catalog yet",
+                no_invoice_items: "No items in the invoice yet. Add a created product or choose from the All Products tab.",
+                btn_download_png: "Download PNG",
+                btn_copy_png: "Copy Image",
+                btn_download_pdf: "Download PDF",
+                btn_download_excel: "Download Excel",
+                btn_share_invoice: "Share",
+                btn_email_invoice: "Send via Email",
+                copied_image_success: "Image copied to clipboard!",
+                copied_image_failed: "Failed to copy image.",
+                all_items_in_invoice: "All products from catalog are already in the invoice!",
+                catalog_status_in_inv: "In invoice",
+                catalog_status_not_in_inv: "Not in invoice",
+
                 modal_del_title: "Confirm Deletion",
                 modal_del_text: "Are you sure you want to delete this item? This action cannot be undone.",
                 btn_cancel: "Cancel",
@@ -1208,15 +1231,12 @@
             if (!tbody) return;
 
             const isInvoiceMode = document.body.classList.contains('invoice-mode');
-            const hideUnselected = document.getElementById('filter-selected')?.checked || false;
-            // Invoice items: only items where in_invoice is true (default true)
+                        // Invoice items: only items where in_invoice is true (default true)
             let invoiceItems = items.filter(it => it.in_invoice !== false);
             let displayItems = invoiceItems;
             if (isInvoiceMode) {
                 // In invoice mode: only show selected (checked) items
-                displayItems = invoiceItems.filter(it => it.selected !== false);
-            } else if (hideUnselected) {
-                displayItems = invoiceItems.filter(it => it.selected);
+                displayItems = invoiceItems.filter(it => it.selected === true);
             }
 
             if (displayItems.length === 0) {
@@ -1226,7 +1246,7 @@
             }
 
             tbody.innerHTML = displayItems.map((item) => {
-                const isSelected = item.selected !== false;
+                const isSelected = item.selected === true;
                 const qty = item.qty || 1;
                 const sum = (item.price * qty).toFixed(2);
                 const dimsText = (item.len && item.width) ? `${item.len} × ${item.width} мм` : '-';
@@ -1313,12 +1333,13 @@
             let totalQty = 0;
             let grandTotal = 0;
 
-            items.forEach(item => {
-                if (item.selected) {
+            const invoiceItems = items.filter(it => it.in_invoice !== false);
+            invoiceItems.forEach(item => {
+                if (item.selected === true) {
                     selectedCount++;
-                    const qty = item.qty || 1;
+                    const qty = parseInt(item.qty, 10) || 1;
                     totalQty += qty;
-                    grandTotal += (item.price * qty);
+                    grandTotal += ((parseFloat(item.price) || 0) * qty);
                 }
             });
 
@@ -1329,6 +1350,28 @@
             if (countEl) countEl.textContent = selectedCount;
             if (qtyEl) qtyEl.textContent = totalQty;
             if (sumEl) sumEl.textContent = grandTotal.toFixed(2);
+
+            // Invoice view button: disabled when no items selected
+            const invBtn = document.getElementById('btn-invoice-mode');
+            if (invBtn) {
+                if (selectedCount === 0) {
+                    invBtn.disabled = true;
+                    invBtn.style.opacity = '0.45';
+                    invBtn.style.cursor = 'not-allowed';
+                    invBtn.style.pointerEvents = 'none';
+                } else {
+                    invBtn.disabled = false;
+                    invBtn.style.opacity = '1';
+                    invBtn.style.cursor = 'pointer';
+                    invBtn.style.pointerEvents = 'auto';
+                }
+            }
+
+            // Sync top select-all checkbox
+            const topCb = document.getElementById('select-all-top');
+            if (topCb) {
+                topCb.checked = invoiceItems.length > 0 && selectedCount === invoiceItems.length;
+            }
         }
 
         window.toggleColumnVisibility = function(colName, isVisible) {
@@ -1352,6 +1395,11 @@
         }
 
         window.enterInvoiceMode = function() {
+            const invoiceItems = items.filter(it => it.in_invoice !== false && it.selected === true);
+            if (invoiceItems.length === 0) {
+                showToast(currentLang === 'uk' ? 'Оберіть хоча б один виріб для перегляду накладної' : 'Select at least one product to view invoice', 'error');
+                return;
+            }
             document.body.classList.add('invoice-mode');
             const dateEl = document.getElementById('inv-date');
             if (dateEl) {

@@ -39,13 +39,13 @@ class WpCalculatorAdmin {
                 'btn_send_to_form' => 'Внести у виріб ↓',
                 'res_area' => 'Розрахована площа:',
                 'res_price' => 'Ціна за 1 шт:',
-                'sec2_title' => '2. Додати виріб у список',
+                'sec2_title' => 'Додати виріб у список',
+                'btn_add_product' => 'Додати виріб',
                 'lbl_add_name' => 'Назва виробу',
                 'lbl_add_mat' => 'Оберіть матеріал',
                 'lbl_add_price' => 'Ціна/шт (грн)',
                 'btn_add_save' => '+ Зберегти',
                 'sec3_title' => '3. Список виробів',
-                'chk_hide_unselected' => 'Сховати невиділені',
                 'btn_select_all' => 'Виділити всі',
                 'btn_deselect_all' => 'Зняти всі',
                 'inv_cols_title' => 'Колонки для накладної:',
@@ -91,7 +91,7 @@ class WpCalculatorAdmin {
                 'chk_add_to_invoice' => 'Додати в накладну',
                 'btn_add_from_catalog' => '+ Додати з каталогу',
                 'btn_add_to_inv' => '+ В накладну',
-                'in_invoice_badge' => 'В накладній ✓',
+                'in_invoice_badge' => 'В накладній',
                 'btn_remove_from_inv' => 'Прибрати з накладної',
                 'modal_catalog_title' => 'Додати вироби з каталогу в накладну',
                 'no_catalog_items' => 'Немає створених виробів у каталозі',
@@ -105,7 +105,7 @@ class WpCalculatorAdmin {
                 'copied_image_success' => 'Зображення скопійовано в буфер обміну!',
                 'copied_image_failed' => 'Не вдалося скопіювати зображення.',
                 'all_items_in_invoice' => 'Усі вироби з каталогу вже є в накладній!',
-                'catalog_status_in_inv' => 'В накладній ✓',
+                'catalog_status_in_inv' => 'В накладній',
                 'catalog_status_not_in_inv' => 'Не в накладній',
                 'modal_del_title' => 'Підтвердження видалення',
                 'modal_del_text' => 'Ви дійсно бажаєте видалити цей елемент? Цю дію неможливо буде скасувати.',
@@ -129,13 +129,13 @@ class WpCalculatorAdmin {
                 'btn_send_to_form' => 'Add to Product Form ↓',
                 'res_area' => 'Calculated Area:',
                 'res_price' => 'Unit Price:',
-                'sec2_title' => '2. Add Product to List',
+                'sec2_title' => 'Add Product to List',
+                'btn_add_product' => 'Add Product',
                 'lbl_add_name' => 'Product Name',
                 'lbl_add_mat' => 'Select Material',
                 'lbl_add_price' => 'Price/unit (UAH)',
                 'btn_add_save' => '+ Save',
                 'sec3_title' => '3. Product List',
-                'chk_hide_unselected' => 'Hide Unselected',
                 'btn_select_all' => 'Select All',
                 'btn_deselect_all' => 'Deselect All',
                 'inv_cols_title' => 'Columns for Invoice:',
@@ -175,6 +175,29 @@ class WpCalculatorAdmin {
                 'lbl_changelog' => 'Release Changelog:',
                 'modal_edit_prod_title' => 'Edit Product',
                 'modal_edit_mat_title' => 'Edit Material',
+                'tab_catalog' => 'All Products',
+                'catalog_title' => '📋 All Created Products Catalog',
+                'catalog_desc' => 'All your created products are stored here. You can add them to the invoice, edit, duplicate or reorder by dragging.',
+                'chk_add_to_invoice' => 'Add to invoice',
+                'btn_add_from_catalog' => '+ Add from catalog',
+                'btn_add_to_inv' => '+ To invoice',
+                'in_invoice_badge' => 'In invoice',
+                'btn_remove_from_inv' => 'Remove from invoice',
+                'modal_catalog_title' => 'Add Products from Catalog to Invoice',
+                'no_catalog_items' => 'No products created in catalog yet',
+                'no_invoice_items' => 'No items in the invoice yet. Add a created product or choose from the All Products tab.',
+                'btn_download_png' => 'Download PNG',
+                'btn_copy_png' => 'Copy Image',
+                'btn_download_pdf' => 'Download PDF',
+                'btn_download_excel' => 'Download Excel',
+                'btn_share_invoice' => 'Share',
+                'btn_email_invoice' => 'Send via Email',
+                'copied_image_success' => 'Image copied to clipboard!',
+                'copied_image_failed' => 'Failed to copy image.',
+                'all_items_in_invoice' => 'All products from catalog are already in the invoice!',
+                'catalog_status_in_inv' => 'In invoice',
+                'catalog_status_not_in_inv' => 'Not in invoice',
+
                 'modal_del_title' => 'Confirm Deletion',
                 'modal_del_text' => 'Are you sure you want to delete this item? This action cannot be undone.',
                 'btn_cancel' => 'Cancel',
@@ -381,10 +404,7 @@ class WpCalculatorAdmin {
                                 <h2 class="no-invoice tc-sec3-header">
                                     <span data-i18n="sec3_title"><?php echo esc_html($t['sec3_title']); ?></span>
                                     <div class="tc-sec3-actions">
-                                        <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; margin:0;">
-                                            <input type="checkbox" id="filter-selected" onchange="renderItems()">
-                                            <span data-i18n="chk_hide_unselected"><?php echo esc_html($t['chk_hide_unselected']); ?></span>
-                                        </label>
+
                                         <button type="button" class="btn btn-outline btn-sm" onclick="openAddFromCatalogModal()" data-i18n="btn_add_from_catalog"><?php echo esc_html($t['btn_add_from_catalog']); ?></button>
                                         <button type="button" class="btn btn-outline btn-sm" onclick="toggleSelectAll(true)" data-i18n="btn_select_all"><?php echo esc_html($t['btn_select_all']); ?></button>
                                         <button type="button" class="btn btn-outline btn-sm" onclick="toggleSelectAll(false)" data-i18n="btn_deselect_all"><?php echo esc_html($t['btn_deselect_all']); ?></button>
@@ -445,7 +465,7 @@ class WpCalculatorAdmin {
 
                                 <!-- Кнопка переходу до накладної на сторінці калькулятора -->
                                 <div style="margin-top:18px; display:flex; justify-content:flex-end; align-items:center;" class="no-invoice">
-                                    <button type="button" class="btn btn-green" onclick="enterInvoiceMode()" data-i18n="btn_invoice_mode" style="padding:10px 22px; font-size:14px; font-weight:700; display:inline-flex; align-items:center; gap:8px;">
+                                    <button type="button" class="btn btn-green" id="btn-invoice-mode" onclick="enterInvoiceMode()" data-i18n="btn_invoice_mode" style="padding:10px 22px; font-size:14px; font-weight:700; display:inline-flex; align-items:center; gap:8px;">
                                         <span>📄</span> <?php echo esc_html($t['btn_invoice_mode']); ?>
                                     </button>
                                 </div>
@@ -499,7 +519,7 @@ class WpCalculatorAdmin {
                                 <p style="margin:4px 0 0 0; font-size:13px; color:#64748b;" data-i18n="catalog_desc"><?php echo esc_html($t['catalog_desc']); ?></p>
                             </div>
                             <button type="button" class="btn btn-green" onclick="switchWcTab('calc')">
-                                <span>➕</span> <span data-i18n="sec2_title"><?php echo esc_html($t['sec2_title']); ?></span>
+                                <span>➕</span> <span data-i18n="btn_add_product"><?php echo esc_html($t['btn_add_product']); ?></span>
                             </button>
                         </div>
                         <div class="tc-table-responsive">
