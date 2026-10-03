@@ -1,16 +1,25 @@
 <?php
 if (!defined("ABSPATH")) exit;
 
-// 1. Отримання збережених даних з безпечною міграцією
+/**
+ * Retrieves saved calculator data with in-memory caching and backward compatibility.
+ */
 function wood_calc_get_stored_data() {
+    static $cached_data = null;
+    if ($cached_data !== null) {
+        return $cached_data;
+    }
+
     $main = get_option('wood_calc_store_v3', null);
     if (!empty($main) && is_array($main) && isset($main['materials'])) {
-        return $main;
+        $cached_data = $main;
+        return $cached_data;
     }
 
     $backup = get_option('wood_calc_store_backup', null);
     if (!empty($backup) && is_array($backup) && isset($backup['materials'])) {
-        return $backup;
+        $cached_data = $backup;
+        return $cached_data;
     }
 
     $legacy_keys = array('wood_calc_store_v4', 'wood_calc_store_v2', 'wood_calc_store');
@@ -55,10 +64,11 @@ function wood_calc_get_stored_data() {
         update_option('wood_calc_store_v3', $initial, false);
     }
 
-    return $initial;
+    $cached_data = $initial;
+    return $cached_data;
 }
 
-// 2. AJAX: Отримання збережених даних
+// 2. AJAX: Fetch stored data
 add_action('wp_ajax_wood_calc_get', 'wood_calc_get_data');
 function wood_calc_get_data() {
     if (!check_ajax_referer('wood_calc_nonce', 'nonce', false)) {
@@ -72,7 +82,7 @@ function wood_calc_get_data() {
     wp_send_json_success($data);
 }
 
-// 3. AJAX: Збереження даних у базу WordPress
+// 3. AJAX: Save data to database
 add_action('wp_ajax_wood_calc_save', 'wood_calc_save_data');
 function wood_calc_save_data() {
     if (!check_ajax_referer('wood_calc_nonce', 'nonce', false)) {
@@ -94,7 +104,7 @@ function wood_calc_save_data() {
         update_option('wood_calc_store_v3', $save_payload, false);
         update_option('wood_calc_store_v4', $save_payload, false);
         update_option('wood_calc_store_backup', $save_payload, false);
-        
+
         wp_send_json_success(array('message' => 'Дані успішно збережено'));
     } else {
         wp_send_json_error('Помилка структури даних');

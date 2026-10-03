@@ -83,8 +83,8 @@ class WpCalculatorGitHubUpdater {
         $res->last_updated  = $release['published_at'] ?? current_time('mysql');
 
         $res->sections = array(
-            'description' => 'Професійний калькулятор вартості виробів з дерева з довідником порід, формуванням накладних та автооновленням з GitHub.',
-            'changelog'   => !empty($release['body']) ? nl2br(esc_html($release['body'])) : 'Оновлення ' . esc_html($latest_version),
+            'description' => 'Universal product and material cost calculator with materials directory, invoice generation, multiple export options (PNG, PDF, Excel), and reliable GitHub auto-updates.',
+            'changelog'   => !empty($release['body']) ? nl2br(esc_html($release['body'])) : 'Release ' . esc_html($latest_version),
         );
 
         return $res;
@@ -132,6 +132,9 @@ class WpCalculatorGitHubUpdater {
         if (!$bypass_cache) {
             $cached = get_transient($cache_key);
             if (false !== $cached && is_array($cached)) {
+                if (!empty($cached['failed'])) {
+                    return null;
+                }
                 return $cached;
             }
         }
@@ -149,11 +152,14 @@ class WpCalculatorGitHubUpdater {
         );
 
         if (is_wp_error($response) || 200 !== wp_remote_retrieve_response_code($response)) {
+            // Cache failed response for 1 hour to prevent blocking admin reloads
+            set_transient($cache_key, array('failed' => true), HOUR_IN_SECONDS);
             return null;
         }
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
         if (!is_array($body) || empty($body['tag_name'])) {
+            set_transient($cache_key, array('failed' => true), HOUR_IN_SECONDS);
             return null;
         }
 
@@ -232,7 +238,6 @@ class WpCalculatorGitHubUpdater {
             wp_send_json_error(array('message' => 'Архів wp-calculator.zip не знайдено в релізі.'));
         }
 
-        // Забезпечуємо запис у transient update_plugins, щоб Plugin_Upgrader коректно виконав як оновлення, так і перевстановлення поточної версії
         $current = get_site_transient('update_plugins');
         if (!is_object($current)) {
             $current = new \stdClass();
@@ -280,9 +285,3 @@ class WpCalculatorGitHubUpdater {
         ));
     }
 }
-
-// Ініціалізація Updater
-$wood_calc_updater = new WpCalculatorGitHubUpdater(WP_CALCULATOR_FILE);
-$wood_calc_updater->register();
-
-// 1. Меню в адмін-панелі WordPress

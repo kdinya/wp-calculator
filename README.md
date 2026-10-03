@@ -1,54 +1,157 @@
-# WP Calculator (Калькулятор виробів з дерева)
+# WP Calculator — Universal Product & Material Cost Calculator for WordPress
 
-Плагін для WordPress, розроблений для швидкого та точного розрахунку вартості виробів з дерева, ведення каталогу та створення охайних накладних для клієнтів у фірмовому стилі магазину.
-
-## 🌟 Основні можливості
-
-1. **Швидкий калькулятор вартості:**
-   - Розрахунок вартості за розмірами в міліметрах (довжина × ширина).
-   - Автоматичний розрахунок площі в см².
-   - Точна вартість за 1 см² (підтримка чисел з будь-якою кількістю знаків після коми, наприклад `0.20123`).
-   - Кнопка «Внести у виріб ↓» для миттєвої передачі параметрів у форму додавання товару.
-
-2. **Каталог збережених виробів:**
-   - Збереження назви, породи дерева, розмірів у мм, фіксованої вартості за 1 шт.
-   - Зміна тарифів матеріалів не ламає раніше збережені вироби — ціни зафіксовані.
-   - Зміна кількості штук для кожного виробу прямо в таблиці (без збоїв при виділенні цифр мишкою).
-   - Чекбокси для вибору замовлених позицій та кнопка «👁️ Сховати невиділені».
-   - Кнопка дублювання (📋) для швидкого створення схожих позицій.
-   - Редагування розмірів та назви через модальне вікно (✏️).
-   - Професійний **Drag-and-Drop (⠿)**: зміна порядку виробів із зеленою лінією-індикатором місця вставки та збереженням порядку в базі.
-
-3. **Довідник матеріалів:**
-   - Створення необмеженої кількості порід дерева/матеріалів із власною точною ціною за см².
-   - Редагування назви та тарифу матеріалу без втрати збережених виробів.
-   - На комп'ютерах розташований у правому стовпчику, на мобільних телефонах автоматично піднімається в самий верх.
-
-4. **Режим накладної для скріншота:**
-   - Кнопка «📸 Накладна для скріна» біля блоку підсумку.
-   - У накладній відображається тільки «РОЗРАХУНОК ЗАМОВЛЕННЯ» та поточна дата.
-   - Налаштування колонок: чекбокси для вибору, які саме стовпці будуть відображатися на скріншоті (Матеріал, Розміри, Ціна/шт, К-сть, Сума).
-   - Кнопка повернення «← Вийти з режиму накладної» винесена під блок, тому не потрапляє у скріншот клієнту.
-
-5. **Залізобетонний захист від втрати даних:**
-   - Збереження в базі даних WordPress (`wp_options`) з підтримкою автоматичного відновлення та склеювання попередніх версій.
-   - Автоматичне резервне дзеркало в локальному сховищі браузера (LocalStorage).
-   - Кнопка «💾 Бекап» у шапці для вивантаження резервної копії в один клік у файл `.json`.
-
-6. **Фірмовий дизайн:**
-   - Оформлення у кольорах сайту (темний графіт `#24272a` та фірмовий зелений акцент `#95b504`).
-   - Зелені чекбокси.
-   - Модальні вікна підтвердження видалення в єдиному стилі сайту замість стандартних вікон браузера.
+[English](#english) | [Українська версія](#українська-версія)
 
 ---
 
-## 🚀 Встановлення
+## English
 
-1. Завантажте архів `wp-calculator.zip` або скопіюйте папку `wp-calculator` у директорію `/wp-content/plugins/` вашого сайту.
-2. В адмін-панелі WordPress перейдіть у розділ **Плагіни -> Встановлені** та натисніть **Активувати** біля «WP Calculator».
-3. Після активації в бічному меню адмінки з'явиться новий пункт **«Калькулятор виробів»**.
+A high-performance, universal calculation, estimation, and invoicing plugin for WordPress. Designed for manufacturers, workshops, craftspeople, fabricators, and businesses calculating costs for any materials (wood, metal, acrylic/plastics, glass, stone, fabrics, composites, sheet goods, and more).
 
-## 📌 Використання
+### 🌟 Key Features
 
-- **В адмінці:** Перейдіть у меню **«Калькулятор виробів»** у панелі WordPress.
-- **На будь-якій сторінці сайту:** Додайте шорткод `[wood_calculator]` (наприклад, створіть сторінку `/calc` і вставте шорткод). Калькулятор автоматично захищений і доступний лише користувачам з правами адміністратора.
+1. **Universal Dimensional Cost Calculator:**
+   - Calculates part and product costs based on dimensions in millimeters (Length × Width).
+   - Real-time area computation in square centimeters ($\text{cm}^2$).
+   - High-precision pricing per $1\text{ cm}^2$ with arbitrary decimal precision (e.g. `0.20123`).
+   - One-click transfer of calculated dimensions and pricing into the active product form.
+
+2. **Catalog & Order Management:**
+   - Save custom products with names, associated materials, dimensions, and unit prices.
+   - Fixed historical prices: updating a material rate in the directory does not alter already saved catalog items.
+   - Live quantity editor directly in the table.
+   - Selection checkboxes with a fast toggle to hide unselected items.
+   - Duplicate with edit modal: clone any item with an immediate adjustment popup.
+   - Smooth **Drag-and-Drop (⠿)** row reordering with accent indicator lines and immediate database persistence.
+   - Dedicated **All Products (Catalog)** tab displaying order inclusion status badges (`In Invoice ✓` / `Not in Invoice`).
+
+3. **Custom Materials Directory:**
+   - Create and manage unlimited materials (metals, woods, plastics, stone, fabrics, sheet materials, composites).
+   - Edit material names and rates per $\text{cm}^2$ dynamically.
+   - Responsive layout: desktop displays the materials directory in a convenient right-hand column; mobile automatically stacks it at the very top.
+
+4. **Invoice & Estimation View:**
+   - Isolated clean invoice view presenting only selected order items.
+   - Order estimate header with automatic current date formatting.
+   - Column visibility controls: dynamically toggle Material, Dimensions, Price/pc, Qty, and Total before exporting.
+
+5. **Multi-Format Export & Sharing:**
+   - **Download PNG:** high-resolution graphic export of the complete invoice.
+   - **Copy Image:** copies the generated invoice image directly to the system clipboard for immediate pasting into chat or messaging apps.
+   - **Download PDF:** clean document generation formatted for print and client handoff.
+   - **Download Excel:** structured `.xls` table export for accounting or inventory workflows.
+   - **Share:** triggers the native Web Share API on mobile devices and modern desktop browsers.
+   - **Email:** opens default email client pre-populated with subject and order summary.
+
+6. **Appearance & Custom Branding:**
+   - Dedicated **Appearance** tab with live accent color picker.
+   - Pre-configured color presets (tomchik green `#95b504`, dark graphite `#24272a`, red `#dc2626`, blue `#2563eb`, purple `#7c3aed`, orange `#ea580c`) plus any hex color.
+   - Instant real-time UI updates without page reloads. Custom-styled checkboxes and radio buttons matching the chosen accent color.
+
+7. **Bilingual Support (English & Ukrainian):**
+   - Seamless language switcher in the Settings tab.
+   - Server-side translation rendering prevents content flashing on initial load.
+   - Language preferences are stored persistently in WordPress options and local browser storage.
+
+8. **Zero Loss Data Protection:**
+   - Multi-tier storage in WordPress `wp_options` with automatic recovery and backward-compatible schema migration.
+   - LocalStorage browser mirror: offline protection prevents accidental data loss during network hiccups.
+   - One-click JSON data export (Backup) for migration or safety.
+   - Safe uninstallation: database records are preserved upon plugin deletion unless explicitly configured otherwise.
+
+9. **Zero-Load Architecture & Optimization:**
+   - **100% idle on public frontend requests:** zero CSS/JS loaded for regular site visitors, zero database queries, zero overhead.
+   - In-memory static caching prevents duplicate queries during admin rendering.
+   - Debounced AJAX synchronization prevents server request flooding during rapid data entry.
+   - Transient caching for external requests prevents admin dashboard freezes.
+
+10. **Built-in GitHub Auto-Updater:**
+    - Checks GitHub Releases directly from the WordPress Settings tab.
+    - One-click automated updates and same-version reinstallation.
+    - Release changelog viewer and package validation.
+
+---
+
+### 🚀 Installation
+
+1. Download `wp-calculator.zip` from the latest GitHub Release.
+2. Go to **Plugins -> Add New -> Upload Plugin** in your WordPress dashboard, select the ZIP archive, and click **Install Now**.
+3. Activate the plugin.
+4. Access the plugin via the **«Калькулятор виробів» (Product Calculator)** menu in the WordPress admin panel.
+
+---
+
+## Українська версія
+
+Універсальний, високопродуктивний плагін для WordPress для розрахунку вартості виробів, створення кошторисів та накладних. Розроблений для майстерень, виробництв, розкрійних цехів, крафтярів та бізнесу для розрахунку виробів із будь-яких матеріалів (дерево, метал, пластик, акрил, скло, камінь, тканини, композити, листові матеріали тощо).
+
+### 🌟 Основні можливості
+
+1. **Універсальний швидкий калькулятор вартості:**
+   - Розрахунок вартості деталей та виробів за розмірами у міліметрах (довжина × ширина).
+   - Миттєвий автоматичний розрахунок площі в $\text{см}^2$.
+   - Точна ціна за $1\text{ см}^2$ із підтримкою довільної кількості знаків після коми (наприклад, `0.20123 грн`).
+   - Кнопка «Внести у виріб ↓» для миттєвої передачі розрахованих розмірів та вартості у форму збереження товару.
+
+2. **Каталог збережених виробів та замовлень:**
+   - Збереження назви виробу, обраного матеріалу, розмірів у мм та фіксованої ціни за 1 шт.
+   - Фіксація цін: зміна тарифу матеріалу в довіднику не змінює вартість уже створених виробів у каталозі.
+   - Зміна кількості прямо в таблиці без збоїв виділення тексту мишкою.
+   - Чекбокси вибору позицій та швидкий фільтр «Сховати невиділені».
+   - Копіювання з модальним вікном: швидке створення схожих позицій із можливістю відредагувати назву, матеріал та розміри перед збереженням.
+   - Плавний **Drag-and-Drop (⠿)**: зміна порядку виробів із лінією-індикатором місця вставки та миттєвим збереженням у базі.
+   - Окрема вкладка **«Всі вироби» (Каталог)** із бейджами статусу присутності в накладній (`В накладній ✓` / `Не в накладній`).
+
+3. **Довідник універсальних матеріалів:**
+   - Додавання необмеженої кількості матеріалів (дерево, метали, пластики, скло, камінь, тканини, композити).
+   - Редагування назви та тарифу матеріалу за $\text{см}^2$ у будь-який час.
+   - Адаптивна розкладка: на ПК довідник зручно розташований у правому стовпчику, на смартфонах — автоматично піднімається нагору.
+
+4. **Режим накладної (кошторису):**
+   - Відокремлений режим перегляду накладної виключно для обраних позицій замовлення.
+   - Шапка «РОЗРАХУНОК ЗАМОВЛЕННЯ» з автоформатуванням поточної дати.
+   - Гнучкий вибір колонок: чекбокси вмикання/вимикання колонок (Матеріал, Розміри, Ціна/шт, К-сть, Сума).
+
+5. **Експорт у різні формати та поширення:**
+   - **Завантажити PNG:** чітке графічне зображення всієї накладної з підсумком.
+   - **Скопіювати картинку:** миттєве копіювання зображення накладної в буфер обміну для відправки у месенджери (Viber, Telegram, WhatsApp).
+   - **Завантажити PDF:** чистий друкований документ для клієнта.
+   - **Завантажити Excel:** таблиця `.xls` для ведення бухгалтерії або обліку.
+   - **Поділитися:** виклик системного діалогу поширення на смартфонах та ПК.
+   - **Надіслати на Email:** запуск поштового клієнта зі сформованою темою та текстом замовлення.
+
+6. **Оформлення та фірмовий стиль:**
+   - Вкладка **«Оформлення»** із палітрою акцентного кольору та Color Picker.
+   - Готові пресети кольорів (фірмовий зелений tomchik `#95b504`, темний графіт `#24272a`, червоний `#dc2626`, синій `#2563eb`, індиго `#7c3aed`, бурштиновий `#ea580c`).
+   - Миттєве застосування без перезавантаження. Стилізовані чекбокси та радіокнопки в акцентному кольорі.
+
+7. **Двомовність (Українська та English):**
+   - Перемикання мови інтерфейсу в налаштуваннях.
+   - Початковий рендеринг мови на стороні сервера виключає миготіння тексту при завантаженні.
+   - Надійне збереження вибору в базі даних WordPress та LocalStorage браузера.
+
+8. **Абсолютний захист даних від втрати:**
+   - Багаторівневе збереження у `wp_options` з автоматичним злиттям історичних даних.
+   - Резервне дзеркало в LocalStorage: відновлення даних навіть при тимчасових перебоях мережі.
+   - Завантаження бекапу в один клік у файл JSON.
+   - Безпечне видалення: дані плагіна за замовчуванням зберігаються в системі навіть після деінсталяції плагіна, якщо не активовано примусове очищення.
+
+9. **Нульове навантаження на сайт та оптимізація:**
+   - **100% нульовий вплив на публічну частину сайту:** жодних файлів JS/CSS для звичайних відвідувачів сайту, жодних запитів до бази даних.
+   - Статичне in-memory кешування запобігає дублюванню SQL-запитів під час відкриття сторінки.
+   - Дебаунс збереження (250 мс) захищає сервер від спаму запитами при частих кліках чи швидкому вводі.
+   - Кешування помилок зовнішніх запитів GitHub запобігає зависанню адмінки при тимчасових мережевих збоях.
+
+10. **Вбудований оновлювач з GitHub:**
+    - Перевірка нових версій безпосередньо з вкладки «Налаштування».
+    - Оновлення або перевстановлення поточної версії в один клік через AJAX.
+    - Відображення списку змін (changelog) релізу.
+
+---
+
+### 🚀 Встановлення
+
+1. Завантажте `wp-calculator.zip` з розділу останнього релізу на GitHub.
+2. В адмін-панелі сайту відкрийте **Плагіни -> Додати новий -> Завантажити плагін**, оберіть архів та натисніть **Встановити зараз**.
+3. Активуйте плагін.
+4. Перейдіть до розділу **«Калькулятор виробів»** у бічному меню панелі WordPress.

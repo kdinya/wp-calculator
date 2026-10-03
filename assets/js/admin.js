@@ -560,6 +560,7 @@
             }
         }
 
+        let saveDebounceTimer = null;
         function saveData(silent) {
             if (!isDataInitialized) return;
             const statusEl = document.getElementById('wc-status');
@@ -576,24 +577,31 @@
                 }
             };
 
+            // Synchronously mirror immediately to LocalStorage (zero lag, reliable mirror)
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
             localStorage.setItem(LANG_STORAGE_KEY, currentLang);
 
-            fetch(AJAX_URL + '?action=wood_calc_save&nonce=' + encodeURIComponent(NONCE), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (res.success && statusEl) {
-                    statusEl.textContent = t('saved');
-                }
-            })
-            .catch(() => {
-                isDataInitialized = true;
+            // Debounce server AJAX requests by 250ms to prevent spamming database on rapid clicks/input
+            if (saveDebounceTimer) {
+                clearTimeout(saveDebounceTimer);
+            }
+            saveDebounceTimer = setTimeout(function() {
+                fetch(AJAX_URL + '?action=wood_calc_save&nonce=' + encodeURIComponent(NONCE), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success && statusEl) {
+                        statusEl.textContent = t('saved');
+                    }
+                })
+                .catch(() => {
+                    isDataInitialized = true;
                     if (statusEl) statusEl.textContent = t('offline');
-            });
+                });
+            }, 250);
         }
 
         window.downloadDataBackup = function() {
