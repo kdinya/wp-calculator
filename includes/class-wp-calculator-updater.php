@@ -158,7 +158,7 @@ class WpCalculatorGitHubUpdater {
         }
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
-        if (!is_array($body) || empty($body['tag_name'])) {
+        if (!is_array($body) || empty($body['tag_name']) || !preg_match('/^v?[0-9]+\.[0-9]+\.[0-9]+$/', (string) $body['tag_name'])) {
             set_transient($cache_key, array('failed' => true), HOUR_IN_SECONDS);
             return null;
         }
@@ -170,7 +170,7 @@ class WpCalculatorGitHubUpdater {
     private function get_download_package(array $release): string {
         if (!empty($release['assets']) && is_array($release['assets'])) {
             foreach ($release['assets'] as $asset) {
-                if (!empty($asset['name']) && 'wp-calculator.zip' === $asset['name'] && !empty($asset['browser_download_url'])) {
+                if (!empty($asset['name']) && 'wp-calculator.zip' === strtolower(trim($asset['name'])) && !empty($asset['browser_download_url'])) {
                     return (string) $asset['browser_download_url'];
                 }
             }

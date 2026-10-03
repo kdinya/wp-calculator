@@ -20,10 +20,11 @@ A high-performance, universal calculation, estimation, and invoicing plugin for 
    - Save custom products with names, associated materials, dimensions, and unit prices.
    - Fixed historical prices: updating a material rate in the directory does not alter already saved catalog items.
    - Live quantity editor directly in the table.
-   - Selection checkboxes with a fast toggle to hide unselected items.
+   - Selection checkboxes to accurately pick items included in the invoice and totals.
+   - Dedicated **All Products (Catalog)** tab with a direct modal to add new products directly into catalog without switching tabs.
    - Duplicate with edit modal: clone any item with an immediate adjustment popup.
    - Smooth **Drag-and-Drop (⠿)** row reordering with accent indicator lines and immediate database persistence.
-   - Dedicated **All Products (Catalog)** tab displaying order inclusion status badges (`In Invoice ✓` / `Not in Invoice`).
+   - Order inclusion status badges (`In Invoice` / `Not in Invoice`).
 
 3. **Custom Materials Directory:**
    - Create and manage unlimited materials (metals, woods, plastics, stone, fabrics, sheet materials, composites).
@@ -53,10 +54,12 @@ A high-performance, universal calculation, estimation, and invoicing plugin for 
    - Server-side translation rendering prevents content flashing on initial load.
    - Language preferences are stored persistently in WordPress options and local browser storage.
 
-8. **Zero Loss Data Protection:**
-   - Multi-tier storage in WordPress `wp_options` with automatic recovery and backward-compatible schema migration.
-   - LocalStorage browser mirror: offline protection prevents accidental data loss during network hiccups.
-   - One-click JSON data export (Backup) for migration or safety.
+8. **Zero Loss Data Protection & Server Security:**
+   - Multi-tier storage in WordPress `wp_options` with automatic recovery and complete backward-compatible merging across all legacy keys.
+   - Robust LocalStorage browser mirror: automatic state recovery if database is empty or uninitialized.
+   - Server-side data sanitization and validation (whitelisted types, dimension bounds, color regex).
+   - One-click JSON data export (Backup) preserving all settings, materials, and items.
+   - CSV formula injection protection during export and unified selection filtering across UI and exports.
    - Safe uninstallation: database records are preserved upon plugin deletion unless explicitly configured otherwise.
 
 9. **Zero-Load Architecture & Optimization:**
@@ -97,10 +100,11 @@ A high-performance, universal calculation, estimation, and invoicing plugin for 
    - Збереження назви виробу, обраного матеріалу, розмірів у мм та фіксованої ціни за 1 шт.
    - Фіксація цін: зміна тарифу матеріалу в довіднику не змінює вартість уже створених виробів у каталозі.
    - Зміна кількості прямо в таблиці без збоїв виділення тексту мишкою.
-   - Чекбокси вибору позицій та швидкий фільтр «Сховати невиділені».
+   - Чекбокси точного вибору позицій, що входять у накладну та враховуються у підсумках.
+   - Окрема вкладка **«Всі вироби» (Каталог)** зі створенням виробу напряму у власному модальному вікні без перемикання на калькулятор.
    - Копіювання з модальним вікном: швидке створення схожих позицій із можливістю відредагувати назву, матеріал та розміри перед збереженням.
    - Плавний **Drag-and-Drop (⠿)**: зміна порядку виробів із лінією-індикатором місця вставки та миттєвим збереженням у базі.
-   - Окрема вкладка **«Всі вироби» (Каталог)** із бейджами статусу присутності в накладній (`В накладній ✓` / `Не в накладній`).
+   - Бейджі статусу присутності позицій у накладній (`В накладній` / `Не в накладній`).
 
 3. **Довідник універсальних матеріалів:**
    - Додавання необмеженої кількості матеріалів (дерево, метали, пластики, скло, камінь, тканини, композити).
@@ -130,10 +134,12 @@ A high-performance, universal calculation, estimation, and invoicing plugin for 
    - Початковий рендеринг мови на стороні сервера виключає миготіння тексту при завантаженні.
    - Надійне збереження вибору в базі даних WordPress та LocalStorage браузера.
 
-8. **Абсолютний захист даних від втрати:**
-   - Багаторівневе збереження у `wp_options` з автоматичним злиттям історичних даних.
-   - Резервне дзеркало в LocalStorage: відновлення даних навіть при тимчасових перебоях мережі.
-   - Завантаження бекапу в один клік у файл JSON.
+8. **Абсолютний захист даних від втрати та серверна безпека:**
+   - Багаторівневе збереження у `wp_options` з повним об'єднанням усіх історичних ключів без втрати даних.
+   - Надійне дзеркало у LocalStorage браузера з авто-відновленням при порожній або скинутій серверній базі.
+   - Серверна санітизація та валідація всіх вхідних даних (розміри, ціни, кольори, мова, типи).
+   - Експорт повної резервної копії в JSON (Бекап) включно з усіма персональними налаштуваннями.
+   - Захист від CSV formula injection при експорті та єдина сувора логіка вибору позицій в інтерфейсі й файлах.
    - Безпечне видалення: дані плагіна за замовчуванням зберігаються в системі навіть після деінсталяції плагіна, якщо не активовано примусове очищення.
 
 9. **Нульове навантаження на сайт та оптимізація:**

@@ -111,6 +111,15 @@ class WpCalculatorAdmin {
                 'modal_del_text' => 'Ви дійсно бажаєте видалити цей елемент? Цю дію неможливо буде скасувати.',
                 'btn_cancel' => 'Скасувати',
                 'btn_save' => 'Зберегти зміни',
+                'modal_add_catalog_title' => 'Додати новий виріб у каталог',
+                'btn_create_in_catalog' => 'Зберегти в каталог',
+                'col_status' => 'Статус',
+                'err_invalid_dims' => 'Будь ласка, вкажіть коректні розміри (довжина та ширина мають бути більше 0).',
+                'err_invalid_price' => 'Ціна повинна бути 0 або більше.',
+                'err_enter_name' => 'Будь ласка, введіть назву виробу.',
+                'data_recovered_toast' => 'Дані успішно відновлено з локального дзеркала!',
+                'chk_modal_add_to_inv' => 'Додати також у поточну накладну',
+                'catalog_item_added' => 'Виріб успішно додано до каталогу!',
                 'btn_delete' => 'Видалити'
             ),
             'en' => array(
@@ -202,6 +211,15 @@ class WpCalculatorAdmin {
                 'modal_del_text' => 'Are you sure you want to delete this item? This action cannot be undone.',
                 'btn_cancel' => 'Cancel',
                 'btn_save' => 'Save Changes',
+                'modal_add_catalog_title' => 'Add New Product to Catalog',
+                'btn_create_in_catalog' => 'Save to Catalog',
+                'col_status' => 'Status',
+                'err_invalid_dims' => 'Please enter valid dimensions (length and width must be greater than 0).',
+                'err_invalid_price' => 'Price must be 0 or greater.',
+                'err_enter_name' => 'Please enter product name.',
+                'data_recovered_toast' => 'Data successfully recovered from local mirror!',
+                'chk_modal_add_to_inv' => 'Also add to current invoice',
+                'catalog_item_added' => 'Product added to catalog successfully!',
                 'btn_delete' => 'Delete'
             )
         );
@@ -352,7 +370,7 @@ class WpCalculatorAdmin {
                                     </div>
                                     <div>
                                         <label data-i18n="lbl_add_price"><?php echo esc_html($t['lbl_add_price']); ?></label>
-                                        <input type="number" step="0.01" id="add-price" placeholder="0.00">
+                                        <input type="number" step="any" id="add-price" placeholder="0.00">
                                     </div>
                                     <div>
                                         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -518,7 +536,7 @@ class WpCalculatorAdmin {
                                 <h2 style="margin:0; font-size:20px; color:var(--tc-dark);" data-i18n="catalog_title"><?php echo esc_html($t['catalog_title']); ?></h2>
                                 <p style="margin:4px 0 0 0; font-size:13px; color:#64748b;" data-i18n="catalog_desc"><?php echo esc_html($t['catalog_desc']); ?></p>
                             </div>
-                            <button type="button" class="btn btn-green" onclick="switchWcTab('calc')">
+                            <button type="button" class="btn btn-green" onclick="openAddCatalogItemModal()">
                                 <span>➕</span> <span data-i18n="btn_add_product"><?php echo esc_html($t['btn_add_product']); ?></span>
                             </button>
                         </div>
@@ -531,7 +549,7 @@ class WpCalculatorAdmin {
                                         <th data-i18n="col_material"><?php echo esc_html($t['col_material']); ?></th>
                                         <th data-i18n="col_dims"><?php echo esc_html($t['col_dims']); ?></th>
                                         <th data-i18n="col_price_pc"><?php echo esc_html($t['col_price_pc']); ?></th>
-                                        <th style="width:160px; text-align:center;">Статус</th>
+                                        <th style="width:160px; text-align:center;" data-i18n="col_status"><?php echo esc_html(['col_status']); ?></th>
                                         <th style="width:130px; text-align:right;" data-i18n="col_actions"><?php echo esc_html($t['col_actions']); ?></th>
                                     </tr>
                                 </thead>
@@ -670,7 +688,7 @@ class WpCalculatorAdmin {
                             </div>
                             <div>
                                 <label data-i18n="lbl_add_price"><?php echo esc_html($t['lbl_add_price']); ?></label>
-                                <input type="number" step="0.01" id="edit-prod-price">
+                                <input type="number" step="any" id="edit-prod-price">
                             </div>
                             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
                                 <button type="button" class="btn btn-outline" onclick="closeEditProductModal()" data-i18n="btn_cancel"><?php echo esc_html($t['btn_cancel']); ?></button>
@@ -720,6 +738,54 @@ class WpCalculatorAdmin {
             </div>
         </div>
                 <!-- МОДАЛЬНЕ ВІКНО: ДОДАТИ З КАТАЛОГУ В НАКЛАДНУ -->
+                
+                <!-- МОДАЛЬНЕ ВІКНО: СТВОРЕННЯ ВИРОБУ В КАТАЛОЗІ -->
+                <div id="modal-add-catalog-item" class="modal-backdrop" style="display:none;" onclick="if(event.target===this)closeAddCatalogItemModal();">
+                    <div class="modal-content" style="max-width:520px;">
+                        <h3 style="margin-top:0; font-size:18px; color:var(--tc-dark);" data-i18n="modal_add_catalog_title"><?php echo esc_html(['modal_add_catalog_title']); ?></h3>
+                        <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
+                            <div>
+                                <label data-i18n="lbl_add_name"><?php echo esc_html(['lbl_add_name']); ?></label>
+                                <input type="text" id="cat-add-name" placeholder="Наприклад: Стільниця дубова">
+                            </div>
+                            <div>
+                                <label data-i18n="lbl_add_mat"><?php echo esc_html(['lbl_add_mat']); ?></label>
+                                <select id="cat-add-mat" onchange="recalcCatalogModalPrice()"></select>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                                <div>
+                                    <label data-i18n="lbl_calc_len"><?php echo esc_html(['lbl_calc_len']); ?></label>
+                                    <input type="number" step="any" id="cat-add-len" value="1000" oninput="recalcCatalogModalPrice()">
+                                </div>
+                                <div>
+                                    <label data-i18n="lbl_calc_width"><?php echo esc_html(['lbl_calc_width']); ?></label>
+                                    <input type="number" step="any" id="cat-add-width" value="500" oninput="recalcCatalogModalPrice()">
+                                </div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                                <div>
+                                    <label data-i18n="col_qty"><?php echo esc_html(['col_qty']); ?></label>
+                                    <input type="number" min="1" id="cat-add-qty" value="1">
+                                </div>
+                                <div>
+                                    <label data-i18n="lbl_add_price"><?php echo esc_html(['lbl_add_price']); ?></label>
+                                    <input type="number" step="any" id="cat-add-price">
+                                </div>
+                            </div>
+                            <div style="margin-top:4px;">
+                                <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:500;">
+                                    <input type="checkbox" id="cat-add-to-inv">
+                                    <span data-i18n="chk_modal_add_to_inv"><?php echo esc_html(['chk_modal_add_to_inv']); ?></span>
+                                </label>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
+                                <button type="button" class="btn btn-outline" onclick="closeAddCatalogItemModal()" data-i18n="btn_cancel"><?php echo esc_html(['btn_cancel']); ?></button>
+                                <button type="button" class="btn btn-green" onclick="saveCatalogItemFromModal()" data-i18n="btn_create_in_catalog"><?php echo esc_html(['btn_create_in_catalog']); ?></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="modal-catalog-picker" class="modal-backdrop" style="display:none;" onclick="if(event.target===this)closeAddFromCatalogModal();">
                     <div class="modal-content" style="max-width:650px;">
                         <h3 data-i18n="modal_catalog_title"><?php echo esc_html($t['modal_catalog_title']); ?></h3>

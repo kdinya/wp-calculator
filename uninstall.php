@@ -5,15 +5,22 @@
 
 defined('WP_UNINSTALL_PLUGIN') || exit;
 
-// Перевіряємо налаштування: за замовчуванням дані НЕ видаляються
-$store = get_option('wood_calc_store_v3', null);
-if (empty($store)) {
-    $store = get_option('wood_calc_store_v4', null);
-}
+// Перевіряємо налаштування в усіх збережених версіях сховища
+$keys = array(
+    'wood_calc_store_v3',
+    'wood_calc_store_v4',
+    'wood_calc_store_backup',
+    'wood_calc_store_v2',
+    'wood_calc_store'
+);
 
 $wipe = false;
-if (!empty($store) && is_array($store) && !empty($store['settings']) && !empty($store['settings']['wipe_on_uninstall'])) {
-    $wipe = true;
+foreach ($keys as $k) {
+    $store = get_option($k, null);
+    if (!empty($store) && is_array($store) && !empty($store['settings']) && !empty($store['settings']['wipe_on_uninstall'])) {
+        $wipe = true;
+        break;
+    }
 }
 
 if ($wipe) {

@@ -131,6 +131,15 @@
                 btn_cancel: "Скасувати",
                 btn_save: "Зберегти зміни",
                 btn_delete: "Видалити",
+            modal_add_catalog_title: "Додати новий виріб у каталог",
+            btn_create_in_catalog: "Зберегти в каталог",
+            col_status: "Статус",
+            err_invalid_dims: "Будь ласка, вкажіть коректні розміри (довжина та ширина мають бути більше 0).",
+            err_invalid_price: "Ціна повинна бути 0 або більше.",
+            err_enter_name: "Будь ласка, введіть назву виробу.",
+            data_recovered_toast: "Дані успішно відновлено з локального дзеркала!",
+            chk_modal_add_to_inv: "Додати також у поточну накладну",
+            catalog_item_added: "Виріб успішно додано до каталогу!",
                 no_items: "Немає створених виробів",
                 no_materials: "Матеріали відсутні. Додайте перший матеріал у довіднику.",
                 enter_valid_name: "Будь ласка, введіть коректну назву та розміри",
@@ -236,6 +245,15 @@
                 btn_cancel: "Cancel",
                 btn_save: "Save Changes",
                 btn_delete: "Delete",
+            modal_add_catalog_title: "Add New Product to Catalog",
+            btn_create_in_catalog: "Save to Catalog",
+            col_status: "Status",
+            err_invalid_dims: "Please enter valid dimensions (length and width must be greater than 0).",
+            err_invalid_price: "Price must be 0 or greater.",
+            err_enter_name: "Please enter product name.",
+            data_recovered_toast: "Data successfully recovered from local mirror!",
+            chk_modal_add_to_inv: "Also add to current invoice",
+            catalog_item_added: "Product added to catalog successfully!",
                 no_items: "No products created yet",
                 no_materials: "No materials added yet. Please add a material in directory.",
                 enter_valid_name: "Please enter valid name and dimensions",
@@ -469,8 +487,46 @@
             // 1. Спершу миттєво ініціалізуємося з серверного bootstrap (без затримки мережі)
             if (window.WOOD_CALC_BOOTSTRAP && window.WOOD_CALC_BOOTSTRAP.data) {
                 const bData = window.WOOD_CALC_BOOTSTRAP.data;
-                materials = Array.isArray(bData.materials) ? bData.materials : [];
-                items = Array.isArray(bData.items) ? bData.items : [];
+                const bMats = Array.isArray(bData.materials) ? bData.materials : [];
+                const bItems = Array.isArray(bData.items) ? bData.items : [];
+                const hasServerData = bMats.length > 0 || bItems.length > 0 || !!bData.initialized;
+
+                if (!hasServerData) {
+                    const localRaw = localStorage.getItem(LOCAL_STORAGE_KEY);
+                    if (localRaw) {
+                        try {
+                            const parsed = JSON.parse(localRaw);
+                            if ((Array.isArray(parsed.materials) && parsed.materials.length > 0) || (Array.isArray(parsed.items) && parsed.items.length > 0)) {
+                                materials = Array.isArray(parsed.materials) ? parsed.materials : [];
+                                items = Array.isArray(parsed.items) ? parsed.items : [];
+                                if (parsed.settings) {
+                                    if (parsed.settings.lang && (parsed.settings.lang === 'uk' || parsed.settings.lang === 'en')) {
+                                        currentLang = parsed.settings.lang;
+                                    }
+                                    if (parsed.settings.accent_color && /^#[0-9a-fA-F]{6}$/.test(parsed.settings.accent_color)) {
+                                        accentColor = parsed.settings.accent_color;
+                                    }
+                                    if (typeof parsed.settings.wipe_on_uninstall !== 'undefined') {
+                                        wipeOnUninstall = !!parsed.settings.wipe_on_uninstall;
+                                    }
+                                    if (parsed.settings.column_visibility && typeof parsed.settings.column_visibility === 'object') {
+                                        columnVisibility = Object.assign({}, columnVisibility, parsed.settings.column_visibility);
+                                    }
+                                }
+                                isDataInitialized = true;
+                                applyAccentColor();
+                                applyLanguageToDom();
+                                showToast(t('data_recovered_toast'));
+                                saveData(true);
+                                if (statusEl) statusEl.textContent = t('saved');
+                                return;
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                materials = bMats;
+                items = bItems;
                 if (bData.settings) {
                     if (bData.settings.lang && (bData.settings.lang === 'uk' || bData.settings.lang === 'en')) {
                         currentLang = bData.settings.lang;
@@ -584,6 +640,7 @@
         }
 
         let saveDebounceTimer = null;
+        let saveSequenceId = 0;
         function saveData(silent) {
             if (!isDataInitialized) return;
             const statusEl = document.getElementById('wc-status');
@@ -609,6 +666,7 @@
                 clearTimeout(saveDebounceTimer);
             }
             saveDebounceTimer = setTimeout(function() {
+                const currentSeq = ++saveSequenceId;
                 fetch(AJAX_URL + '?action=wood_calc_save&nonce=' + encodeURIComponent(NONCE), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -616,11 +674,13 @@
                 })
                 .then(r => r.json())
                 .then(res => {
+                    if (currentSeq !== saveSequenceId) return;
                     if (res.success && statusEl) {
                         statusEl.textContent = t('saved');
                     }
                 })
                 .catch(() => {
+                    if (currentSeq !== saveSequenceId) return;
                     isDataInitialized = true;
                     if (statusEl) statusEl.textContent = t('offline');
                 });
@@ -631,7 +691,12 @@
             const data = {
                 materials: materials,
                 items: items,
-                settings: { lang: currentLang },
+                settings: {
+                    lang: currentLang,
+                    accent_color: accentColor,
+                    wipe_on_uninstall: wipeOnUninstall,
+                    column_visibility: columnVisibility
+                },
                 export_date: new Date().toISOString()
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -808,6 +873,15 @@
 
             if (!name) {
                 showToast(t('enter_valid_name'), 'error');
+                if (nameEl) nameEl.focus();
+                return;
+            }
+            if (len <= 0 || width <= 0) {
+                showToast(t('err_invalid_dims'), 'error');
+                return;
+            }
+            if (isNaN(price) || price < 0) {
+                showToast(t('err_invalid_price'), 'error');
                 return;
             }
 
@@ -1545,7 +1619,7 @@
 
         // --- EXPORT & SHARE FUNCTIONS (100% COMPLETE & WORKING) ---
         function getInvoiceDataForExport() {
-            const invoiceItems = items.filter(it => it.in_invoice !== false && it.selected !== false);
+            const invoiceItems = items.filter(it => it.in_invoice !== false && it.selected === true);
             const now = new Date();
             const dateStr = now.toLocaleDateString(currentLang === 'uk' ? 'uk-UA' : 'en-US', {
                 year: 'numeric',
@@ -1780,13 +1854,24 @@
             csv += (currentLang === 'uk' ? 'Дата' : 'Date') + ': ' + dateStr + ';;;\n\n';
             csv += '№;' + (currentLang === 'uk' ? 'Назва виробу' : 'Product name') + ';' + (currentLang === 'uk' ? 'Матеріал' : 'Material') + ';' + (currentLang === 'uk' ? 'Розміри' : 'Dimensions') + ';' + (currentLang === 'uk' ? 'К-сть' : 'Qty') + ';' + (currentLang === 'uk' ? 'Ціна за од.' : 'Unit price') + ';' + (currentLang === 'uk' ? 'Сума' : 'Total') + '\n';
 
+            function cleanCsvField(val) {
+                let s = (val === null || val === undefined) ? '' : String(val);
+                if (/^[=+\-@]/.test(s)) {
+                    s = "'" + s;
+                }
+                if (s.includes(';') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+                    return '"' + s.replace(/"/g, '""') + '"';
+                }
+                return s;
+            }
+
             invItems.forEach((it, idx) => {
                 const q = it.qty || 1;
                 const price = parseFloat(it.price || 0).toFixed(2);
                 const sum = (parseFloat(it.price || 0) * q).toFixed(2);
                 const dims = (it.len && it.width) ? (it.len + 'x' + it.width + ' mm') : '-';
-                const name = it.name.replace(/;/g, ' ');
-                const mat = (it.material || '').replace(/;/g, ' ');
+                const name = cleanCsvField(it.name);
+                const mat = cleanCsvField(it.material || '');
                 csv += (idx + 1) + ';' + name + ';' + mat + ';' + dims + ';' + q + ';' + price + ';' + sum + '\n';
             });
 
@@ -1872,6 +1957,112 @@
             } catch(e) {}
             applyAccentColor();
             loadData();
-        });
+        
+        // --- МОДАЛЬНЕ ВІКНО ДОДАВАННЯ ВИРОБУ В КАТАЛОГ ---
+        window.openAddCatalogItemModal = function() {
+            const modal = document.getElementById('modal-add-catalog-item');
+            if (!modal) return;
+            const nameInput = document.getElementById('cat-add-name');
+            const matSelect = document.getElementById('cat-add-mat');
+            const lenInput = document.getElementById('cat-add-len');
+            const widthInput = document.getElementById('cat-add-width');
+            const qtyInput = document.getElementById('cat-add-qty');
+            const priceInput = document.getElementById('cat-add-price');
+            const invCheckbox = document.getElementById('cat-add-to-inv');
+
+            if (nameInput) nameInput.value = '';
+            if (matSelect) {
+                matSelect.innerHTML = materials.map(m => '<option value="' + escapeHtml(m.id) + '" data-name="' + escapeHtml(m.name) + '" data-rate="' + m.price_per_cm2 + '">' + escapeHtml(m.name) + ' (' + m.price_per_cm2 + ' ' + t('curr') + '/см²)</option>').join('');
+            }
+            if (lenInput) lenInput.value = '1000';
+            if (widthInput) widthInput.value = '500';
+            if (qtyInput) qtyInput.value = '1';
+            if (invCheckbox) invCheckbox.checked = false;
+
+            recalcCatalogModalPrice();
+            modal.style.display = 'flex';
+            if (nameInput) nameInput.focus();
+        };
+
+        window.closeAddCatalogItemModal = function() {
+            const modal = document.getElementById('modal-add-catalog-item');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.recalcCatalogModalPrice = function() {
+            const matSelect = document.getElementById('cat-add-mat');
+            const lenInput = document.getElementById('cat-add-len');
+            const widthInput = document.getElementById('cat-add-width');
+            const priceInput = document.getElementById('cat-add-price');
+            if (!matSelect || !lenInput || !widthInput || !priceInput) return;
+
+            const opt = matSelect.selectedOptions ? matSelect.selectedOptions[0] : null;
+            const rate = opt ? (parseFloat(opt.dataset.rate) || 0) : 0;
+            const len = parseFloat(lenInput.value) || 0;
+            const width = parseFloat(widthInput.value) || 0;
+            const area = (len * width) / 100;
+            const calculated = area * rate;
+            priceInput.value = calculated > 0 ? (Math.round(calculated * 10000) / 10000) : '0';
+        };
+
+        window.saveCatalogItemFromModal = function() {
+            const nameInput = document.getElementById('cat-add-name');
+            const matSelect = document.getElementById('cat-add-mat');
+            const lenInput = document.getElementById('cat-add-len');
+            const widthInput = document.getElementById('cat-add-width');
+            const qtyInput = document.getElementById('cat-add-qty');
+            const priceInput = document.getElementById('cat-add-price');
+            const invCheckbox = document.getElementById('cat-add-to-inv');
+
+            const name = nameInput ? nameInput.value.trim() : '';
+            if (!name) {
+                showToast(t('err_enter_name'), 'error');
+                if (nameInput) nameInput.focus();
+                return;
+            }
+
+            const len = parseFloat(lenInput ? lenInput.value : 0) || 0;
+            const width = parseFloat(widthInput ? widthInput.value : 0) || 0;
+            if (len <= 0 || width <= 0) {
+                showToast(t('err_invalid_dims'), 'error');
+                return;
+            }
+
+            const qty = parseInt(qtyInput ? qtyInput.value : 1, 10) || 1;
+            const price = parseFloat(priceInput ? priceInput.value : 0);
+            if (isNaN(price) || price < 0) {
+                showToast(t('err_invalid_price'), 'error');
+                return;
+            }
+
+            const matOption = matSelect && matSelect.selectedOptions ? matSelect.selectedOptions[0] : null;
+            const matId = matSelect ? matSelect.value : '';
+            const matName = matOption ? (matOption.getAttribute('data-name') || matOption.textContent.split(' (')[0].trim()) : '';
+            const addToInvoice = !!(invCheckbox && invCheckbox.checked);
+
+            const newItem = {
+                id: 'p_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                name: name,
+                material: matName,
+                material_id: matId,
+                len: len,
+                width: width,
+                area_cm2: (len * width) / 100,
+                price: price,
+                qty: qty,
+                in_invoice: addToInvoice,
+                selected: addToInvoice
+            };
+
+            items.unshift(newItem);
+            saveData(true);
+            renderItems();
+            renderCatalogTab();
+            updateCalculations();
+            closeAddCatalogItemModal();
+            showToast(t('catalog_item_added'));
+        };
+
+});
         loadData();
     })();
