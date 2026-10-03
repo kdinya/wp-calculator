@@ -364,10 +364,30 @@
                 color: var(--tc-dark);
             }
 
+            .invoice-actions-bar {
+                display: none;
+            }
+            .invoice-mode .invoice-actions-bar {
+                display: flex !important;
+            }
+            @media print {
+                .invoice-actions-bar,
+                #exit-invoice-container {
+                    display: none !important;
+                }
+            }
             .invoice-mode #wood-calculator-app {
                 background: #ffffff !important;
-                padding: 20px !important;
+                padding: 24px !important;
+                padding-bottom: 50px !important;
                 box-shadow: none !important;
+            }
+            .invoice-mode .summary-bar {
+                margin-bottom: 30px !important;
+                padding: 18px 24px !important;
+                border: 1px solid var(--tc-border);
+                border-radius: 8px;
+                box-sizing: border-box !important;
             }
             .invoice-mode .no-invoice {
                 display: none !important;

@@ -60,8 +60,10 @@ class WpCalculatorAdmin {
                 'summary_sum' => 'Загальна сума:',
                 'pcs' => 'шт',
                 'curr' => 'грн',
-                'btn_invoice_mode' => '📸 Накладна для скріна',
-                'btn_exit_invoice' => '← Вийти з режиму накладної',
+                'btn_invoice_mode' => '📄 Переглянути накладну',
+                'modal_copy_prod_title' => 'Копіювання виробу',
+                'btn_back_to_calc' => '← Повернутися до калькулятора',
+                'btn_exit_invoice' => '← Повернутися до калькулятора',
                 'invoice_title' => 'РОЗРАХУНОК ЗАМОВЛЕННЯ',
                 'sec_materials_title' => '📦 Довідник матеріалів',
                 'lbl_mat_name' => 'Назва матеріалу',
@@ -148,8 +150,10 @@ class WpCalculatorAdmin {
                 'summary_sum' => 'Grand total:',
                 'pcs' => 'pcs',
                 'curr' => 'UAH',
-                'btn_invoice_mode' => '📸 Invoice for Screenshot',
-                'btn_exit_invoice' => '← Exit Invoice Mode',
+                'btn_invoice_mode' => '📄 View Invoice',
+                'modal_copy_prod_title' => 'Copy Product',
+                'btn_back_to_calc' => '← Back to Calculator',
+                'btn_exit_invoice' => '← Back to Calculator',
                 'invoice_title' => 'ORDER ESTIMATE',
                 'sec_materials_title' => '📦 Materials Directory',
                 'lbl_mat_name' => 'Material Name',
@@ -417,31 +421,11 @@ class WpCalculatorAdmin {
                                     </div>
                                 </div>
 
-                                <!-- Панель дій та експорту накладної -->
-                                <div style="margin-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-                                        <button type="button" class="btn btn-outline btn-sm" onclick="downloadInvoicePng()" title="Завантажити накладну як картинку PNG" data-i18n="btn_download_png">
-                                            <span>🖼️</span> <?php echo esc_html($t['btn_download_png']); ?>
-                                        </button>
-                                        <button type="button" class="btn btn-outline btn-sm" onclick="copyInvoicePng()" title="Скопіювати зображення в буфер для вставки в чат" data-i18n="btn_copy_png">
-                                            <span>📋</span> <?php echo esc_html($t['btn_copy_png']); ?>
-                                        </button>
-                                        <button type="button" class="btn btn-outline btn-sm" onclick="downloadInvoicePdf()" title="Завантажити накладну у форматі PDF" data-i18n="btn_download_pdf">
-                                            <span>📄</span> <?php echo esc_html($t['btn_download_pdf']); ?>
-                                        </button>
-                                        <button type="button" class="btn btn-outline btn-sm" onclick="downloadInvoiceExcel()" title="Експортувати замовлення в таблицю Excel" data-i18n="btn_download_excel">
-                                            <span>📊</span> <?php echo esc_html($t['btn_download_excel']); ?>
-                                        </button>
-                                        <button type="button" class="btn btn-outline btn-sm" id="btn-share-wc" onclick="shareInvoice()" title="Поділитися накладною через будь-який додаток" data-i18n="btn_share_invoice">
-                                            <span>📲</span> <?php echo esc_html($t['btn_share_invoice']); ?>
-                                        </button>
-                                        <button type="button" class="btn btn-outline btn-sm" onclick="emailInvoice()" title="Надіслати замовлення по email" data-i18n="btn_email_invoice">
-                                            <span>✉️</span> <?php echo esc_html($t['btn_email_invoice']); ?>
-                                        </button>
-                                    </div>
-                                    <div class="no-invoice">
-                                        <button type="button" class="btn btn-green" onclick="enterInvoiceMode()" data-i18n="btn_invoice_mode"><?php echo esc_html($t['btn_invoice_mode']); ?></button>
-                                    </div>
+                                <!-- Кнопка переходу до накладної на сторінці калькулятора -->
+                                <div style="margin-top:18px; display:flex; justify-content:flex-end; align-items:center;" class="no-invoice">
+                                    <button type="button" class="btn btn-green" onclick="enterInvoiceMode()" data-i18n="btn_invoice_mode" style="padding:10px 22px; font-size:14px; font-weight:700; display:inline-flex; align-items:center; gap:8px;">
+                                        <span>📄</span> <?php echo esc_html($t['btn_invoice_mode']); ?>
+                                    </button>
                                 </div>
                             </div>
 
@@ -619,9 +603,11 @@ class WpCalculatorAdmin {
                 <!-- МОДАЛЬНЕ ВІКНО РЕДАГУВАННЯ ВИРОБУ -->
                 <div id="modal-edit-product" class="modal-backdrop">
                     <div class="modal-content">
-                        <h3 style="margin-top:0; font-size:18px; color:var(--tc-dark);" data-i18n="modal_edit_prod_title"><?php echo esc_html($t['modal_edit_prod_title']); ?></h3>
+                        <h3 id="modal-edit-prod-title" style="margin-top:0; font-size:18px; color:var(--tc-dark);" data-i18n="modal_edit_prod_title"><?php echo esc_html($t['modal_edit_prod_title']); ?></h3>
                         <input type="hidden" id="edit-prod-id">
-                    <input type="hidden" id="edit-prod-source-id">
+                        <input type="hidden" id="edit-prod-source-id">
+                        <input type="hidden" id="edit-prod-action" value="edit">
+                        <input type="hidden" id="edit-prod-target" value="invoice">
                         <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
                             <div>
                                 <label data-i18n="lbl_add_name"><?php echo esc_html($t['lbl_add_name']); ?></label>

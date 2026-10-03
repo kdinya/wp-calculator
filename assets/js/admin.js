@@ -70,8 +70,10 @@
                 pcs: "шт",
                 curr: "грн",
                 sq_cm: "см²",
-                btn_invoice_mode: "📸 Накладна для скріна",
-                btn_exit_invoice: "← Вийти з режиму накладної",
+                btn_invoice_mode: "📄 Переглянути накладну",
+                modal_copy_prod_title: "Копіювання виробу",
+                btn_back_to_calc: "← Повернутися до калькулятора",
+                btn_exit_invoice: "← Повернутися до калькулятора",
                 invoice_title: "РОЗРАХУНОК ЗАМОВЛЕННЯ",
                 sec_materials_title: "📦 Довідник матеріалів",
                 lbl_mat_name: "Назва матеріалу",
@@ -172,8 +174,10 @@
                 pcs: "pcs",
                 curr: "UAH",
                 sq_cm: "cm²",
-                btn_invoice_mode: "📸 Invoice for Screenshot",
-                btn_exit_invoice: "← Exit Invoice Mode",
+                btn_invoice_mode: "📄 View Invoice",
+                modal_copy_prod_title: "Copy Product",
+                btn_back_to_calc: "← Back to Calculator",
+                btn_exit_invoice: "← Back to Calculator",
                 invoice_title: "ORDER ESTIMATE",
                 sec_materials_title: "📦 Materials Directory",
                 lbl_mat_name: "Material Name",
@@ -807,11 +811,50 @@
             const item = items.find(it => String(it.id) === String(id));
             if (!item) return;
 
+            const titleEl = document.getElementById('modal-edit-prod-title');
+            if (titleEl) titleEl.textContent = t('modal_edit_prod_title');
+
             document.getElementById('edit-prod-id').value = item.id;
-            const srcIdEl = document.getElementById('edit-prod-source-id');
+            let srcIdEl = document.getElementById('edit-prod-source-id');
             if (srcIdEl) srcIdEl.value = '';
+            let actionEl = document.getElementById('edit-prod-action');
+            if (actionEl) actionEl.value = 'edit';
 
             document.getElementById('edit-prod-name').value = item.name || '';
+            document.getElementById('edit-prod-len').value = item.len || '';
+            document.getElementById('edit-prod-width').value = item.width || '';
+            document.getElementById('edit-prod-price').value = item.price || '';
+
+            const editMatSel = document.getElementById('edit-prod-mat');
+            if (editMatSel) {
+                for (let i = 0; i < editMatSel.options.length; i++) {
+                    if (editMatSel.options[i].getAttribute('data-name') === item.material) {
+                        editMatSel.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            document.getElementById('modal-edit-product').style.display = 'flex';
+        };
+
+        window.openCopyProductModal = function(id, target) {
+            const item = items.find(it => String(it.id) === String(id));
+            if (!item) return;
+
+            const titleEl = document.getElementById('modal-edit-prod-title');
+            if (titleEl) titleEl.textContent = t('modal_copy_prod_title');
+
+            document.getElementById('edit-prod-id').value = '';
+            let srcIdEl = document.getElementById('edit-prod-source-id');
+            if (srcIdEl) srcIdEl.value = item.id;
+            let actionEl = document.getElementById('edit-prod-action');
+            if (actionEl) actionEl.value = 'copy';
+            let targetEl = document.getElementById('edit-prod-target');
+            if (targetEl) targetEl.value = target || 'invoice';
+
+            const copySuffix = (currentLang === 'uk' ? ' (копія)' : ' (copy)');
+            document.getElementById('edit-prod-name').value = (item.name || '') + copySuffix;
             document.getElementById('edit-prod-len').value = item.len || '';
             document.getElementById('edit-prod-width').value = item.width || '';
             document.getElementById('edit-prod-price').value = item.price || '';
@@ -834,12 +877,18 @@
             document.getElementById('edit-prod-id').value = '';
             const srcIdEl = document.getElementById('edit-prod-source-id');
             if (srcIdEl) srcIdEl.value = '';
+            const actionEl = document.getElementById('edit-prod-action');
+            if (actionEl) actionEl.value = 'edit';
         };
 
         window.saveEditedProduct = function() {
             const id = document.getElementById('edit-prod-id').value;
-            const sourceIdEl = document.getElementById('edit-prod-source-id');
-            const sourceId = sourceIdEl ? sourceIdEl.value : '';
+            const srcIdEl = document.getElementById('edit-prod-source-id');
+            const sourceId = srcIdEl ? srcIdEl.value : '';
+            const actionEl = document.getElementById('edit-prod-action');
+            const action = actionEl ? actionEl.value : (id ? 'edit' : 'copy');
+            const targetEl = document.getElementById('edit-prod-target');
+            const target = targetEl ? targetEl.value : 'invoice';
 
             const name = document.getElementById('edit-prod-name').value.trim();
             const editMatSel = document.getElementById('edit-prod-mat');
@@ -854,27 +903,37 @@
                 return;
             }
 
-            if (!id && sourceId) {
-                // Creating a duplicated product ONLY now upon save!
+            if (action === 'copy' && sourceId) {
+                const orig = items.find(it => String(it.id) === String(sourceId));
                 const newId = 'p_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+                const isForInvoice = (target === 'invoice');
                 const newProduct = {
                     id: newId,
                     name: name,
-                    material: matName,
+                    material: matName || (orig ? orig.material : ''),
                     len: len,
                     width: width,
                     price: price,
-                    qty: 1,
-                    selected: true
+                    qty: (isForInvoice && orig) ? (orig.qty || 1) : 1,
+                    selected: isForInvoice,
+                    in_invoice: isForInvoice,
+                    photo: orig ? (orig.photo || '') : ''
                 };
+
                 const srcIdx = items.findIndex(it => String(it.id) === String(sourceId));
                 if (srcIdx !== -1) {
                     items.splice(srcIdx + 1, 0, newProduct);
                 } else {
                     items.push(newProduct);
                 }
+
+                closeEditProductModal();
+                saveData();
+                renderItems();
+                renderCatalogTab();
+                showToast(isForInvoice ? (currentLang === 'uk' ? 'Копію створено в накладній' : 'Copy created in invoice') : (currentLang === 'uk' ? 'Копію створено в каталозі' : 'Copy created in catalog'), 'success');
+                return;
             } else if (id) {
-                // Editing existing product
                 const item = items.find(it => String(it.id) === String(id));
                 if (!item) return;
                 item.name = name;
@@ -882,11 +941,16 @@
                 item.len = len;
                 item.width = width;
                 item.price = price;
+
+                closeEditProductModal();
+                saveData();
+                renderItems();
+                renderCatalogTab();
+                showToast(currentLang === 'uk' ? 'Виріб успішно оновлено' : 'Product updated', 'success');
+                return;
             }
 
             closeEditProductModal();
-            renderItems();
-            saveData();
         };
 
         window.duplicateItem = function(id) {
@@ -1011,6 +1075,13 @@
             }
         };
 
+        
+        window.askRemoveFromInvoice = function(id) {
+            showConfirmModal(() => {
+                removeFromInvoice(id);
+            });
+        };
+
         window.removeFromInvoice = function(id) {
             const it = items.find(x => String(x.id) === String(id));
             if (it) {
@@ -1100,7 +1171,7 @@
                                         ${t('btn_add_to_inv')}
                                     </button>
                                 `}
-                                <button type="button" class="btn btn-outline btn-sm" onclick="duplicateCatalogItem('${item.id}')" title="Дублювати">📋</button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="openCopyProductModal('${item.id}', 'catalog')" title="Дублювати в каталозі">📋</button>
                                 <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="Редагувати">✏️</button>
                                 <button type="button" class="btn-delete-transp" onclick="askDeleteCatalogItem('${item.id}')" title="Видалити">🗑️</button>
                             </div>
@@ -1169,9 +1240,9 @@
                             ${sum} ${t('curr')}
                         </td>
                         <td class="no-invoice" style="text-align:right; white-space:nowrap;">
-                            <button type="button" class="btn btn-outline btn-sm" onclick="duplicateCatalogItem('${item.id}')" title="Дублювати">📋</button>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="openCopyProductModal('${item.id}', 'invoice')" title="Дублювати в накладній">📋</button>
                             <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="Редагувати">✏️</button>
-                            <button type="button" class="btn btn-danger btn-sm" onclick="askDeleteCatalogItem('${item.id}')" title="Видалити">🗑️</button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="askRemoveFromInvoice('${item.id}')" title="Вилучити з накладної">🗑️</button>
                         </td>
                     </tr>
                 `;
@@ -1436,11 +1507,14 @@
                 const ctx = canvas.getContext('2d');
                 const scale = 2; // High-res Retina
 
-                const width = 800;
+                const width = 840;
                 const headerHeight = 110;
+                const tableHeaderSpacing = 54;
                 const rowHeight = 44;
-                const footerHeight = 90;
-                const height = headerHeight + Math.max(1, invItems.length) * rowHeight + footerHeight;
+                const footerBoxHeight = 66;
+                const bottomPadding = 45;
+                const rowsCount = Math.max(1, invItems.length);
+                const height = headerHeight + tableHeaderSpacing + (rowsCount * rowHeight) + footerBoxHeight + bottomPadding;
 
                 canvas.width = width * scale;
                 canvas.height = height * scale;
@@ -1474,10 +1548,11 @@
                 ctx.font = 'bold 12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
                 ctx.fillText('№', 36, y);
                 ctx.fillText(currentLang === 'uk' ? 'НАЗВА ВИРОБУ' : 'PRODUCT NAME', 80, y);
-                ctx.fillText(currentLang === 'uk' ? 'РОЗМІРИ' : 'DIMENSIONS', 420, y);
-                ctx.fillText(currentLang === 'uk' ? 'К-СТЬ' : 'QTY', 560, y);
-                ctx.fillText(currentLang === 'uk' ? 'ЦІНА' : 'PRICE', 630, y);
-                ctx.fillText(currentLang === 'uk' ? 'СУМА' : 'TOTAL', 710, y);
+                ctx.fillText(currentLang === 'uk' ? 'МАТЕРІАЛ' : 'MATERIAL', 340, y);
+                ctx.fillText(currentLang === 'uk' ? 'РОЗМІРИ' : 'DIMENSIONS', 470, y);
+                ctx.fillText(currentLang === 'uk' ? 'К-СТЬ' : 'QTY', 590, y);
+                ctx.fillText(currentLang === 'uk' ? 'ЦІНА' : 'PRICE', 660, y);
+                ctx.fillText(currentLang === 'uk' ? 'СУМА' : 'TOTAL', 740, y);
 
                 ctx.strokeStyle = '#e2e8f0';
                 ctx.lineWidth = 1;
@@ -1506,18 +1581,20 @@
 
                         ctx.fillStyle = '#0f172a';
                         ctx.font = 'bold 13px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-                        const nameText = it.name.length > 36 ? it.name.substring(0, 34) + '...' : it.name;
+                        const nameText = it.name.length > 28 ? it.name.substring(0, 26) + '...' : it.name;
                         ctx.fillText(nameText, 80, y);
 
                         ctx.fillStyle = '#64748b';
                         ctx.font = '13px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-                        ctx.fillText(dims, 420, y);
-                        ctx.fillText(String(q) + (currentLang === 'uk' ? ' шт' : ' pcs'), 560, y);
-                        ctx.fillText(price, 630, y);
+                        const matText = (it.material || '-').length > 16 ? (it.material || '-').substring(0, 14) + '...' : (it.material || '-');
+                        ctx.fillText(matText, 340, y);
+                        ctx.fillText(dims, 470, y);
+                        ctx.fillText(String(q) + (currentLang === 'uk' ? ' шт' : ' pcs'), 590, y);
+                        ctx.fillText(price, 660, y);
 
                         ctx.fillStyle = '#0f172a';
                         ctx.font = 'bold 13px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-                        ctx.fillText(sum + ' ' + t('curr'), 710, y);
+                        ctx.fillText(sum + ' ' + t('curr'), 740, y);
 
                         ctx.strokeStyle = '#f1f5f9';
                         ctx.beginPath();
@@ -1529,20 +1606,21 @@
                     });
                 }
 
-                // Footer Box
-                y += 10;
+                // Footer Box - with guaranteed ample margin below
+                y += 14;
                 ctx.fillStyle = '#f8fafc';
-                ctx.fillRect(36, y, width - 72, 50);
+                ctx.fillRect(36, y, width - 72, footerBoxHeight);
                 ctx.strokeStyle = '#e2e8f0';
-                ctx.strokeRect(36, y, width - 72, 50);
+                ctx.lineWidth = 1;
+                ctx.strokeRect(36, y, width - 72, footerBoxHeight);
 
                 ctx.fillStyle = '#334155';
                 ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-                ctx.fillText((currentLang === 'uk' ? 'Разом товарів: ' : 'Total items: ') + totalQty + (currentLang === 'uk' ? ' шт.' : ' pcs.'), 56, y + 31);
+                ctx.fillText((currentLang === 'uk' ? 'Разом товарів: ' : 'Total items: ') + totalQty + (currentLang === 'uk' ? ' шт.' : ' pcs.'), 56, y + 38);
 
                 ctx.fillStyle = '#0f172a';
                 ctx.font = 'bold 16px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-                ctx.fillText((currentLang === 'uk' ? 'ДО СПЛАТИ: ' : 'TOTAL TO PAY: ') + grandTotal.toFixed(2) + ' ' + t('curr'), 520, y + 31);
+                ctx.fillText((currentLang === 'uk' ? 'ДО СПЛАТИ: ' : 'TOTAL TO PAY: ') + grandTotal.toFixed(2) + ' ' + t('curr'), 520, y + 38);
 
                 canvas.toBlob((blob) => resolve({ blob, canvas }), 'image/png');
             });
