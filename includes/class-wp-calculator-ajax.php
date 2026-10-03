@@ -30,6 +30,7 @@ function wood_calc_get_stored_data() {
         'lang' => 'uk',
         'accent_color' => '#95b504',
         'wipe_on_uninstall' => false,
+        'currency' => 'грн',
         'column_visibility' => array(
             'mat' => true,
             'dims' => true,
@@ -213,6 +214,7 @@ function wood_calc_save_data() {
 
             $len = isset($item['len']) ? (float) $item['len'] : 0.0;
             $width = isset($item['width']) ? (float) $item['width'] : 0.0;
+            $height = (isset($item['height']) && is_numeric($item['height']) && (float) $item['height'] > 0) ? (float) $item['height'] : 0.0;
             $price = isset($item['price']) ? (float) $item['price'] : 0.0;
             $qty = isset($item['qty']) ? (int) $item['qty'] : 1;
 
@@ -235,7 +237,9 @@ function wood_calc_save_data() {
                 'material_id' => isset($item['material_id']) ? sanitize_text_field((string) $item['material_id']) : '',
                 'len' => $len,
                 'width' => $width,
+                'height' => $height > 0 ? $height : null,
                 'area_cm2' => ($len * $width) / 100,
+                'volume_cm3' => $height > 0 ? (($len * $width * $height) / 1000) : null,
                 'price' => $price,
                 'qty' => $qty,
                 'in_invoice' => !isset($item['in_invoice']) || !empty($item['in_invoice']),
@@ -251,6 +255,10 @@ function wood_calc_save_data() {
         ? (string) $input_settings['accent_color']
         : '#95b504';
     $wipe_on_uninstall = !empty($input_settings['wipe_on_uninstall']);
+    $currency = (isset($input_settings['currency']) && is_string($input_settings['currency'])) ? sanitize_text_field(trim($input_settings['currency'])) : 'грн';
+    if ($currency === '') {
+        $currency = 'грн';
+    }
     $column_visibility = array('mat' => true, 'dims' => true, 'price' => true, 'qty' => true, 'sum' => true);
 
     if (isset($input_settings['column_visibility']) && is_array($input_settings['column_visibility'])) {
@@ -268,6 +276,7 @@ function wood_calc_save_data() {
             'lang' => $lang,
             'accent_color' => $accent_color,
             'wipe_on_uninstall' => $wipe_on_uninstall,
+            'currency' => $currency,
             'column_visibility' => $column_visibility,
         ),
         'initialized' => true,

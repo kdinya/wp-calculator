@@ -32,6 +32,11 @@ class WpCalculatorAdmin {
                 'btn_backup' => 'Завантажити бекап (JSON)',
                 'backup_title' => '💾 Резервне копіювання даних',
                 'backup_desc' => 'Збережіть повну резервну копію ваших матеріалів, виробів та налаштувань у файлі JSON для безпеки або перенесення.',
+                                'settings_currency' => 'Грошова одиниця (символ)',
+                'settings_currency_desc' => 'Вкажіть символ або скорочення валюти (наприклад: грн, $, €, zł, USD), яка відображатиметься біля цін і підсумкових сум.',
+                'lbl_calc_height' => 'Висота (мм, опц.)',
+                'res_volume' => 'Розрахований об\'єм:',
+                'cu_cm' => 'см³',
                 'sec1_title' => '1. Швидкий калькулятор вартості',
                 'lbl_calc_mat' => 'Матеріал (тариф за 1 см²)',
                 'lbl_calc_len' => 'Довжина (мм)',
@@ -132,6 +137,11 @@ class WpCalculatorAdmin {
                 'btn_backup' => 'Download Backup (JSON)',
                 'backup_title' => '💾 Data Backup',
                 'backup_desc' => 'Save a complete backup of your materials, items, and settings in JSON format for security or migration.',
+                                'settings_currency' => 'Currency symbol / unit',
+                'settings_currency_desc' => 'Specify currency symbol or abbreviation (e.g. грн, $, €, zł, USD) displayed next to prices and totals.',
+                'lbl_calc_height' => 'Height (mm, opt.)',
+                'res_volume' => 'Calculated volume:',
+                'cu_cm' => 'cm³',
                 'sec1_title' => '1. Quick Cost Calculator',
                 'lbl_calc_mat' => 'Material (rate per 1 cm²)',
                 'lbl_calc_len' => 'Length (mm)',
@@ -251,7 +261,14 @@ class WpCalculatorAdmin {
         );
 
         $stored_data = wood_calc_get_stored_data();
-        $saved_settings = isset($stored_data['settings']) && is_array($stored_data['settings']) ? $stored_data['settings'] : array();
+                $saved_settings = isset($stored_data['settings']) && is_array($stored_data['settings']) ? $stored_data['settings'] : array();
+        $col_vis = isset($saved_settings['column_visibility']) && is_array($saved_settings['column_visibility']) ? $saved_settings['column_visibility'] : array();
+        $col_mat_checked = !isset($col_vis['mat']) || !empty($col_vis['mat']) ? 'checked' : '';
+        $col_dims_checked = !isset($col_vis['dims']) || !empty($col_vis['dims']) ? 'checked' : '';
+        $col_price_checked = !isset($col_vis['price']) || !empty($col_vis['price']) ? 'checked' : '';
+        $col_qty_checked = !isset($col_vis['qty']) || !empty($col_vis['qty']) ? 'checked' : '';
+        $col_sum_checked = !isset($col_vis['sum']) || !empty($col_vis['sum']) ? 'checked' : '';
+
         $current_lang = isset($saved_settings['lang']) && in_array($saved_settings['lang'], array('uk', 'en'), true) ? $saved_settings['lang'] : 'uk';
         $accent_color = isset($saved_settings['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', $saved_settings['accent_color']) ? $saved_settings['accent_color'] : '#95b504';
         $wipe_on_uninstall = !empty($saved_settings['wipe_on_uninstall']);
@@ -263,7 +280,11 @@ class WpCalculatorAdmin {
             'settings' => array(
                 'lang' => $current_lang,
                 'accent_color' => $accent_color,
-                'wipe_on_uninstall' => $wipe_on_uninstall
+                'wipe_on_uninstall' => $wipe_on_uninstall,
+                'currency' => isset($saved_settings['currency']) ? $saved_settings['currency'] : 'грн',
+                'column_visibility' => isset($saved_settings['column_visibility']) && is_array($saved_settings['column_visibility']) ? $saved_settings['column_visibility'] : array(
+                    'mat' => true, 'dims' => true, 'price' => true, 'qty' => true, 'sum' => true
+                )
             ),
             'version'  => WP_CALCULATOR_VERSION
         );
@@ -281,7 +302,14 @@ class WpCalculatorAdmin {
         }
 
         $stored_data = wood_calc_get_stored_data();
-        $saved_settings = isset($stored_data['settings']) && is_array($stored_data['settings']) ? $stored_data['settings'] : array();
+                $saved_settings = isset($stored_data['settings']) && is_array($stored_data['settings']) ? $stored_data['settings'] : array();
+        $col_vis = isset($saved_settings['column_visibility']) && is_array($saved_settings['column_visibility']) ? $saved_settings['column_visibility'] : array();
+        $col_mat_checked = !isset($col_vis['mat']) || !empty($col_vis['mat']) ? 'checked' : '';
+        $col_dims_checked = !isset($col_vis['dims']) || !empty($col_vis['dims']) ? 'checked' : '';
+        $col_price_checked = !isset($col_vis['price']) || !empty($col_vis['price']) ? 'checked' : '';
+        $col_qty_checked = !isset($col_vis['qty']) || !empty($col_vis['qty']) ? 'checked' : '';
+        $col_sum_checked = !isset($col_vis['sum']) || !empty($col_vis['sum']) ? 'checked' : '';
+
         $current_lang = isset($saved_settings['lang']) && in_array($saved_settings['lang'], array('uk', 'en'), true) ? $saved_settings['lang'] : 'uk';
         $accent_color = isset($saved_settings['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', $saved_settings['accent_color']) ? $saved_settings['accent_color'] : '#95b504';
         $t = self::get_translations($current_lang);
@@ -334,13 +362,17 @@ class WpCalculatorAdmin {
                                         <label data-i18n="lbl_calc_width"><?php echo esc_html($t['lbl_calc_width']); ?></label>
                                         <input type="number" id="calc-width" placeholder="300" oninput="runQuickCalc()">
                                     </div>
+                                    <div>
+                                        <label data-i18n="lbl_calc_height"><?php echo esc_html($t['lbl_calc_height']); ?></label>
+                                        <input type="number" id="calc-height" placeholder="—" oninput="runQuickCalc()">
+                                    </div>
                                     <div class="full-mobile">
                                         <button type="button" class="btn btn-green" style="width:100%;" onclick="sendToSaveForm()" data-i18n="btn_send_to_form"><?php echo esc_html($t['btn_send_to_form']); ?></button>
                                     </div>
                                 </div>
                                 <div class="calc-result-box">
                                     <div>
-                                        <span style="font-size:12px; color:#64748b;" data-i18n="res_area"><?php echo esc_html($t['res_area']); ?></span>
+                                        <span id="calc-area-label" style="font-size:12px; color:#64748b;" data-i18n="res_area"><?php echo esc_html($t['res_area']); ?></span>
                                         <strong id="res-area" style="font-size:15px; margin-left:4px;">0 см²</strong>
                                     </div>
                                     <div>
@@ -369,6 +401,10 @@ class WpCalculatorAdmin {
                                     <div>
                                         <label data-i18n="lbl_calc_width"><?php echo esc_html($t['lbl_calc_width']); ?></label>
                                         <input type="number" id="add-width" placeholder="мм">
+                                    </div>
+                                    <div>
+                                        <label data-i18n="lbl_calc_height"><?php echo esc_html($t['lbl_calc_height']); ?></label>
+                                        <input type="number" id="add-height" placeholder="мм (опц.)">
                                     </div>
                                     <div>
                                         <label data-i18n="lbl_add_price"><?php echo esc_html($t['lbl_add_price']); ?></label>
@@ -432,22 +468,22 @@ class WpCalculatorAdmin {
                                 </h2>
 
                                 <!-- Вибір колонок для накладної -->
-                                <div class="no-invoice" style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin-bottom:12px; border:1px solid #e2e8f0; display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-                                    <strong style="font-size:12px; color:#475569;" data-i18n="inv_cols_title"><?php echo esc_html($t['inv_cols_title']); ?></strong>
-                                    <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
-                                        <input type="checkbox" id="col-toggle-mat" checked onchange="toggleColumnVisibility('mat', this.checked)"> <span data-i18n="col_material"><?php echo esc_html($t['col_material']); ?></span>
+                                <div class="no-invoice tc-inv-cols-bar" style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin-bottom:12px; border:1px solid #e2e8f0; display:flex !important; flex-direction:row !important; gap:16px; align-items:center !important; flex-wrap:wrap !important;">
+                                    <strong style="font-size:12px; color:#475569; display:inline-block; white-space:nowrap;" data-i18n="inv_cols_title"><?php echo esc_html($t['inv_cols_title']); ?></strong>
+                                    <label style="display:inline-flex !important; align-items:center !important; gap:5px; margin:0 !important; cursor:pointer; font-size:12px; white-space:nowrap;">
+                                        <input type="checkbox" id="col-toggle-mat" <?php echo $col_mat_checked; ?> onchange="toggleColumnVisibility('mat', this.checked)"> <span data-i18n="col_material"><?php echo esc_html($t['col_material']); ?></span>
                                     </label>
-                                    <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
-                                        <input type="checkbox" id="col-toggle-dims" checked onchange="toggleColumnVisibility('dims', this.checked)"> <span data-i18n="col_dims"><?php echo esc_html($t['col_dims']); ?></span>
+                                    <label style="display:inline-flex !important; align-items:center !important; gap:5px; margin:0 !important; cursor:pointer; font-size:12px; white-space:nowrap;">
+                                        <input type="checkbox" id="col-toggle-dims" <?php echo $col_dims_checked; ?> onchange="toggleColumnVisibility('dims', this.checked)"> <span data-i18n="col_dims"><?php echo esc_html($t['col_dims']); ?></span>
                                     </label>
-                                    <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
-                                        <input type="checkbox" id="col-toggle-price" checked onchange="toggleColumnVisibility('price', this.checked)"> <span data-i18n="col_price_pc"><?php echo esc_html($t['col_price_pc']); ?></span>
+                                    <label style="display:inline-flex !important; align-items:center !important; gap:5px; margin:0 !important; cursor:pointer; font-size:12px; white-space:nowrap;">
+                                        <input type="checkbox" id="col-toggle-price" <?php echo $col_price_checked; ?> onchange="toggleColumnVisibility('price', this.checked)"> <span data-i18n="col_price_pc"><?php echo esc_html($t['col_price_pc']); ?></span>
                                     </label>
-                                    <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
-                                        <input type="checkbox" id="col-toggle-qty" checked onchange="toggleColumnVisibility('qty', this.checked)"> <span data-i18n="col_qty"><?php echo esc_html($t['col_qty']); ?></span>
+                                    <label style="display:inline-flex !important; align-items:center !important; gap:5px; margin:0 !important; cursor:pointer; font-size:12px; white-space:nowrap;">
+                                        <input type="checkbox" id="col-toggle-qty" <?php echo $col_qty_checked; ?> onchange="toggleColumnVisibility('qty', this.checked)"> <span data-i18n="col_qty"><?php echo esc_html($t['col_qty']); ?></span>
                                     </label>
-                                    <label style="display:inline-flex; align-items:center; gap:5px; margin:0; cursor:pointer; font-size:12px;">
-                                        <input type="checkbox" id="col-toggle-sum" checked onchange="toggleColumnVisibility('sum', this.checked)"> <span data-i18n="col_sum"><?php echo esc_html($t['col_sum']); ?></span>
+                                    <label style="display:inline-flex !important; align-items:center !important; gap:5px; margin:0 !important; cursor:pointer; font-size:12px; white-space:nowrap;">
+                                        <input type="checkbox" id="col-toggle-sum" <?php echo $col_sum_checked; ?> onchange="toggleColumnVisibility('sum', this.checked)"> <span data-i18n="col_sum"><?php echo esc_html($t['col_sum']); ?></span>
                                     </label>
                                 </div>
 
@@ -604,6 +640,15 @@ class WpCalculatorAdmin {
                                     <?php echo esc_html($t['settings_lang_desc']); ?>
                                 </p>
 
+                                <div style="margin-top:20px; padding-top:16px; border-top:1px solid #e2e8f0;">
+                                    <label style="font-weight:700; font-size:14px; margin-bottom:8px; display:block;" data-i18n="settings_currency"><?php echo esc_html($t['settings_currency']); ?></label>
+                                    <div style="display:flex; gap:10px; align-items:center; max-width:240px;">
+                                        <input type="text" id="wc-currency" value="<?php echo esc_attr(isset($saved_settings['currency']) && $saved_settings['currency'] !== '' ? $saved_settings['currency'] : ($current_lang === 'uk' ? 'грн' : 'UAH')); ?>" style="padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; font-weight:600; width:120px;" oninput="setWcCurrency(this.value)">
+                                    </div>
+                                    <p style="font-size:12px; color:#64748b; margin-top:6px; line-height:1.5;" data-i18n="settings_currency_desc">
+                                        <?php echo esc_html($t['settings_currency_desc']); ?>
+                                    </p>
+                                </div>
                                 <div style="margin-top:24px; padding-top:16px; border-top:1px solid #e2e8f0;">
                                     <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; font-size:13px; margin:0;">
                                         <input type="checkbox" id="wc-wipe-on-uninstall" <?php checked(!empty($saved_settings['wipe_on_uninstall'])); ?> onchange="toggleWipeOnUninstall(this.checked)">
@@ -678,7 +723,7 @@ class WpCalculatorAdmin {
                                 <label data-i18n="lbl_add_mat"><?php echo esc_html($t['lbl_add_mat']); ?></label>
                                 <select id="edit-prod-mat"></select>
                             </div>
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
                                 <div>
                                     <label data-i18n="lbl_calc_len"><?php echo esc_html($t['lbl_calc_len']); ?></label>
                                     <input type="number" id="edit-prod-len">
@@ -686,6 +731,10 @@ class WpCalculatorAdmin {
                                 <div>
                                     <label data-i18n="lbl_calc_width"><?php echo esc_html($t['lbl_calc_width']); ?></label>
                                     <input type="number" id="edit-prod-width">
+                                </div>
+                                <div>
+                                    <label data-i18n="lbl_calc_height"><?php echo esc_html($t['lbl_calc_height']); ?></label>
+                                    <input type="number" id="edit-prod-height" placeholder="—">
                                 </div>
                             </div>
                             <div>
@@ -754,7 +803,7 @@ class WpCalculatorAdmin {
                                 <label data-i18n="lbl_add_mat"><?php echo esc_html($t['lbl_add_mat']); ?></label>
                                 <select id="cat-add-mat" onchange="recalcCatalogModalPrice()"></select>
                             </div>
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
                                 <div>
                                     <label data-i18n="lbl_calc_len"><?php echo esc_html($t['lbl_calc_len']); ?></label>
                                     <input type="number" step="any" id="cat-add-len" value="1000" oninput="recalcCatalogModalPrice()">
@@ -762,6 +811,10 @@ class WpCalculatorAdmin {
                                 <div>
                                     <label data-i18n="lbl_calc_width"><?php echo esc_html($t['lbl_calc_width']); ?></label>
                                     <input type="number" step="any" id="cat-add-width" value="500" oninput="recalcCatalogModalPrice()">
+                                </div>
+                                <div>
+                                    <label data-i18n="lbl_calc_height"><?php echo esc_html($t['lbl_calc_height']); ?></label>
+                                    <input type="number" step="any" id="cat-add-height" placeholder="—" oninput="recalcCatalogModalPrice()">
                                 </div>
                             </div>
                             <div>

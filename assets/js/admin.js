@@ -41,6 +41,11 @@
                 syncing: "● Синхронізація...",
                 saved: "● Збережено в WordPress",
                 offline: "● Локальний режим",
+                                settings_currency: "Грошова одиниця (символ)",
+                settings_currency_desc: "Вкажіть символ або скорочення валюти (наприклад: грн, $, €, zł, USD), яка відображатиметься біля цін і підсумкових сум.",
+                lbl_calc_height: "Висота (мм, опц.)",
+                res_volume: "Розрахований об'єм:",
+                cu_cm: "см³",
                 sec1_title: "1. Швидкий калькулятор вартості",
                 lbl_calc_mat: "Матеріал (тариф за 1 см²)",
                 lbl_calc_len: "Довжина (мм)",
@@ -155,6 +160,11 @@
                 syncing: "● Syncing...",
                 saved: "● Saved to WordPress",
                 offline: "● Offline mode",
+                                settings_currency: "Currency symbol / unit",
+                settings_currency_desc: "Specify currency symbol or abbreviation (e.g. грн, $, €, zł, USD) displayed next to prices and totals.",
+                lbl_calc_height: "Height (mm, opt.)",
+                res_volume: "Calculated volume:",
+                cu_cm: "cm³",
                 sec1_title: "1. Quick Cost Calculator",
                 lbl_calc_mat: "Material (rate per 1 cm²)",
                 lbl_calc_len: "Length (mm)",
@@ -264,6 +274,7 @@
         };
 
         let currentLang = 'uk';
+        let appCurrency = 'грн';
         let materials = [];
         let items = [];
         let columnVisibility = {
@@ -275,6 +286,9 @@
         };
 
         function t(key) {
+            if (key === 'curr' && appCurrency && appCurrency.trim() !== '') {
+                return appCurrency.trim();
+            }
             if (I18N[currentLang] && I18N[currentLang][key]) {
                 return I18N[currentLang][key];
             }
@@ -369,6 +383,17 @@
             const customInput = document.getElementById('wc-custom-color');
             if (customInput) customInput.value = accentColor;
         }
+
+        
+        window.setWcCurrency = function(val) {
+            appCurrency = (typeof val === 'string' && val.trim() !== '') ? val.trim() : (currentLang === 'uk' ? 'грн' : 'UAH');
+            applyLanguageToDom();
+            renderMaterials();
+            renderItems();
+            renderCatalogTab();
+            runQuickCalc();
+            saveData(true);
+        };
 
         window.setAccentColor = function(color) {
             if (!/^#[0-9a-fA-F]{6}$/.test(color)) return;
@@ -539,6 +564,11 @@
                     if (typeof bData.settings.wipe_on_uninstall !== 'undefined') {
                         wipeOnUninstall = !!bData.settings.wipe_on_uninstall;
                     }
+                    if (bData.settings.currency) {
+                        appCurrency = bData.settings.currency;
+                        const currInput = document.getElementById('wc-currency');
+                        if (currInput) currInput.value = appCurrency;
+                    }
                     if (bData.settings.column_visibility && typeof bData.settings.column_visibility === 'object') {
                         columnVisibility = Object.assign({}, columnVisibility, bData.settings.column_visibility);
                     }
@@ -546,6 +576,7 @@
                 isDataInitialized = true;
                 applyAccentColor();
                 applyLanguageToDom();
+                applyColumnVisibility();
                 if (statusEl) statusEl.textContent = t('saved');
                 return;
             }
@@ -567,6 +598,11 @@
                             if (res.data.settings.lang) {
                                 currentLang = res.data.settings.lang;
                                 localStorage.setItem(LANG_STORAGE_KEY, currentLang);
+                            }
+                            if (res.data.settings.currency) {
+                                appCurrency = res.data.settings.currency;
+                                const currInput = document.getElementById('wc-currency');
+                                if (currInput) currInput.value = appCurrency;
                                 const langRadio = document.getElementById('wc-lang-' + currentLang);
                                 if (langRadio) langRadio.checked = true;
                             }
@@ -613,6 +649,11 @@
                     if (parsed.items && Array.isArray(parsed.items)) items = parsed.items;
                     if (parsed.settings && parsed.settings.lang) {
                         currentLang = parsed.settings.lang;
+                        if (parsed.settings.currency) {
+                            appCurrency = parsed.settings.currency;
+                            const currInput = document.getElementById('wc-currency');
+                            if (currInput) currInput.value = appCurrency;
+                        }
                         const langRadio = document.getElementById('wc-lang-' + currentLang);
                         if (langRadio) langRadio.checked = true;
                     }
@@ -728,14 +769,19 @@
             const matSel = document.getElementById('calc-mat');
             const len = parseFloat(document.getElementById('calc-len').value) || 0;
             const width = parseFloat(document.getElementById('calc-width').value) || 0;
+            const heightInput = document.getElementById('calc-height');
+            const height = parseFloat(heightInput ? heightInput.value : 0) || 0;
             const rate = parseFloat(matSel ? matSel.value : 0) || 0;
 
-            const areaCm2 = (len * width) / 100;
-            const price = areaCm2 * rate;
+            const isVolume = (height > 0);
+            const dimQty = isVolume ? ((len * width * height) / 1000) : ((len * width) / 100);
+            const price = dimQty * rate;
 
+            const areaLabel = document.getElementById('calc-area-label');
             const resArea = document.getElementById('res-area');
             const resPrice = document.getElementById('res-price');
-            if (resArea) resArea.textContent = areaCm2.toFixed(1) + ' ' + t('sq_cm');
+            if (areaLabel) areaLabel.textContent = isVolume ? t('res_volume') : t('res_area');
+            if (resArea) resArea.textContent = dimQty.toFixed(isVolume ? 2 : 1) + ' ' + (isVolume ? t('cu_cm') : t('sq_cm'));
             if (resPrice) resPrice.textContent = price.toFixed(2) + ' ' + t('curr');
         };
 
@@ -743,23 +789,29 @@
             const matSel = document.getElementById('calc-mat');
             const lenVal = document.getElementById('calc-len').value;
             const widthVal = document.getElementById('calc-width').value;
+            const heightInput = document.getElementById('calc-height');
+            const heightVal = heightInput ? heightInput.value : '';
             const selectedOpt = matSel ? matSel.options[matSel.selectedIndex] : null;
             const matName = selectedOpt ? selectedOpt.getAttribute('data-name') : '';
 
             const len = parseFloat(lenVal) || 0;
             const width = parseFloat(widthVal) || 0;
+            const height = parseFloat(heightVal) || 0;
             const rate = parseFloat(matSel ? matSel.value : 0) || 0;
-            const price = ((len * width) / 100) * rate;
+            const dimQty = height > 0 ? ((len * width * height) / 1000) : ((len * width) / 100);
+            const price = dimQty * rate;
 
             const addName = document.getElementById('add-name');
             const addMat = document.getElementById('add-mat');
             const addLen = document.getElementById('add-len');
             const addWidth = document.getElementById('add-width');
+            const addHeight = document.getElementById('add-height');
             const addPrice = document.getElementById('add-price');
 
             if (addName) addName.value = (currentLang === 'uk' ? 'Виріб #' : 'Product #') + (items.length + 1);
             if (addLen) addLen.value = lenVal;
             if (addWidth) addWidth.value = widthVal;
+            if (addHeight) addHeight.value = heightVal;
             if (addPrice) addPrice.value = price.toFixed(2);
 
             if (addMat && matName) {
@@ -813,9 +865,11 @@
                         <tr>
                             <td><strong>${escapeHtml(m.name)}</strong></td>
                             <td>${parseFloat(m.price)}</td>
-                            <td style="text-align:right;">
-                                <button type="button" class="btn btn-outline btn-sm" onclick="openEditMaterialModal(${idx})" title="${t('modal_edit_mat_title')}">✏️</button>
-                                <button type="button" class="btn-delete-transp" onclick="askDeleteMaterial(${idx})" title="${t('btn_delete')}">🗑️</button>
+                            <td style="text-align:right; white-space:nowrap;">
+                                <div style="display:inline-flex; align-items:center; justify-content:flex-end; gap:6px;">
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="openEditMaterialModal(${idx})" title="${t('modal_edit_mat_title')}">✏️</button>
+                                    <button type="button" class="btn-delete-transp" onclick="askDeleteMaterial(${idx})" title="${t('btn_delete')}">🗑️</button>
+                                </div>
                             </td>
                         </tr>
                     `).join('');
@@ -913,6 +967,8 @@
             const matId = selectedOpt ? selectedOpt.value : '';
             const len = parseFloat(lenEl ? lenEl.value : 0) || 0;
             const width = parseFloat(widthEl ? widthEl.value : 0) || 0;
+            const heightEl = document.getElementById('add-height');
+            const height = parseFloat(heightEl ? heightEl.value : 0) || 0;
             const price = parseFloat(priceEl ? priceEl.value : 0) || 0;
 
             if (!name) {
@@ -939,6 +995,9 @@
                 material_id: matId,
                 len: len,
                 width: width,
+                height: height > 0 ? height : null,
+                area_cm2: (len * width) / 100,
+                volume_cm3: height > 0 ? ((len * width * height) / 1000) : null,
                 price: price,
                 qty: 1,
                 selected: true,
@@ -952,6 +1011,8 @@
             if (lenEl) lenEl.value = '';
             if (widthEl) widthEl.value = '';
             if (priceEl) priceEl.value = '';
+            const heightElClean = document.getElementById('add-height');
+            if (heightElClean) heightElClean.value = '';
 
             renderItems();
             saveData();
@@ -1265,7 +1326,7 @@
                                 '</div>' +
                                 '<div style="font-size:12px; color:#64748b; margin-top:3px;">' +
                                     (it.material ? escapeHtml(it.material) + ' · ' : '') +
-                                    ((it.len && it.width) ? it.len + '×' + it.width + ' мм · ' : '') +
+                                    ((it.len && it.width) ? formatItemDims(it) + ' · ' : '') +
                                     parseFloat(it.price || 0).toFixed(2) + ' ' + t('curr') +
                                 '</div>' +
                             '</div>' +
@@ -1297,7 +1358,7 @@
             }
 
             tbody.innerHTML = items.map((item) => {
-                const dimsText = (item.len && item.width) ? `${item.len} × ${item.width} мм` : '-';
+                const dimsText = (item.len && item.width) ? formatItemDims(item) : '-';
                 const isInInv = (item.in_invoice !== false);
 
                 return `
@@ -1369,7 +1430,7 @@
                 const isSelected = item.selected === true;
                 const qty = item.qty || 1;
                 const sum = (item.price * qty).toFixed(2);
-                const dimsText = (item.len && item.width) ? `${item.len} × ${item.width} мм` : '-';
+                const dimsText = (item.len && item.width) ? formatItemDims(item) : '-';
 
                 return `
                     <tr id="row-${item.id}" data-id="${item.id}">
@@ -1507,7 +1568,15 @@
                 });
             };
 
-                        setDisplay('.col-mat-header, .col-mat-cell', columnVisibility.mat);
+            // Sync toggle checkboxes state
+            ['mat', 'dims', 'price', 'qty', 'sum'].forEach(col => {
+                const cb = document.getElementById('col-toggle-' + col);
+                if (cb && typeof columnVisibility[col] !== 'undefined') {
+                    cb.checked = !!columnVisibility[col];
+                }
+            });
+
+            setDisplay('.col-mat-header, .col-mat-cell', columnVisibility.mat);
             setDisplay('.col-dims-header, .col-dims-cell', columnVisibility.dims);
             setDisplay('.col-price-header, .col-price-cell', columnVisibility.price);
             setDisplay('.col-qty-header, .col-qty-cell', columnVisibility.qty);
@@ -2021,6 +2090,8 @@
             }
             if (lenInput) lenInput.value = '1000';
             if (widthInput) widthInput.value = '500';
+            const heightInput = document.getElementById('cat-add-height');
+            if (heightInput) heightInput.value = '';
             if (invCheckbox) invCheckbox.checked = false;
 
             recalcCatalogModalPrice();
@@ -2037,6 +2108,7 @@
             const matSelect = document.getElementById('cat-add-mat');
             const lenInput = document.getElementById('cat-add-len');
             const widthInput = document.getElementById('cat-add-width');
+            const heightInput = document.getElementById('cat-add-height');
             const priceInput = document.getElementById('cat-add-price');
             if (!matSelect || !lenInput || !widthInput || !priceInput) return;
 
@@ -2044,8 +2116,9 @@
             const rate = opt ? (parseFloat(opt.dataset.rate) || 0) : 0;
             const len = parseFloat(lenInput.value) || 0;
             const width = parseFloat(widthInput.value) || 0;
-            const area = (len * width) / 100;
-            const calculated = area * rate;
+            const height = parseFloat(heightInput ? heightInput.value : 0) || 0;
+            const dimQty = height > 0 ? ((len * width * height) / 1000) : ((len * width) / 100);
+            const calculated = dimQty * rate;
             priceInput.value = calculated > 0 ? (Math.round(calculated * 10000) / 10000) : '0';
         };
 
@@ -2066,6 +2139,8 @@
 
             const len = parseFloat(lenInput ? lenInput.value : 0) || 0;
             const width = parseFloat(widthInput ? widthInput.value : 0) || 0;
+            const heightInput = document.getElementById('cat-add-height');
+            const height = parseFloat(heightInput ? heightInput.value : 0) || 0;
             if (len <= 0 || width <= 0) {
                 showToast(t('err_invalid_dims'), 'error');
                 return;
@@ -2089,7 +2164,9 @@
                 material_id: matId,
                 len: len,
                 width: width,
+                height: height > 0 ? height : null,
                 area_cm2: (len * width) / 100,
+                volume_cm3: height > 0 ? ((len * width * height) / 1000) : null,
                 price: price,
                 qty: 1,
                 in_invoice: addToInvoice,
