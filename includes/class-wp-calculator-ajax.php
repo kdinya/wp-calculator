@@ -1,83 +1,129 @@
 <?php
-if (!defined("ABSPATH")) exit;
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /**
- * Retrieves saved calculator data with in-memory caching and complete backward-compatibility merge.
+ * Retrieves saved calculator data with in-memory caching and complete backward-compatible merging.
  */
 function wood_calc_get_stored_data() {
-    static  = null;
-    if ( !== null) {
-        return ;
+    static $cached_data = null;
+
+    if ($cached_data !== null) {
+        return $cached_data;
     }
 
-     = array(
+    $storage_keys = array(
         'wood_calc_store_v3',
         'wood_calc_store_v4',
         'wood_calc_store_backup',
         'wood_calc_store_v2',
-        'wood_calc_store'
+        'wood_calc_store',
     );
 
-     = array();
-     = array();
-     = array(
+    $merged_materials = array();
+    $merged_items = array();
+    $saved_settings = array(
         'lang' => 'uk',
         'accent_color' => '#95b504',
         'wipe_on_uninstall' => false,
-        'column_visibility' => array('mat' => true, 'dims' => true, 'price' => true, 'qty' => true, 'sum' => true)
+        'column_visibility' => array(
+            'mat' => true,
+            'dims' => true,
+            'price' => true,
+            'qty' => true,
+            'sum' => true,
+        ),
     );
-     = false;
+    $found_storage = false;
 
-    // Iterate through all historical storage keys to merge items, materials, and settings without dropping anything
-    foreach ( as ) {
-         = get_option(, null);
-        if (!empty() && is_array()) {
-             = true;
+    foreach ($storage_keys as $key) {
+        $stored = get_option($key, null);
+        if (empty($stored) || !is_array($stored)) {
+            continue;
+        }
 
-            if (!empty(['settings']) && is_array(['settings'])) {
-                foreach (['settings'] as  => ) {
-                    if (!isset([])) {
-                        [] = ;
-                    }
+        $found_storage = true;
+
+        if (!empty($stored['settings']) && is_array($stored['settings'])) {
+            foreach ($stored['settings'] as $setting_key => $setting_value) {
+                if (array_key_exists($setting_key, $saved_settings)) {
+                    $saved_settings[$setting_key] = $setting_value;
                 }
             }
+        }
 
-            if (!empty(['materials']) && is_array(['materials'])) {
-                foreach (['materials'] as ) {
-                     = isset(['id']) ? strval(['id']) : (isset(['name']) ? sanitize_title(['name']) : '');
-                    if ( !== '' && !isset([])) {
-                        [] = ;
-                    }
+        if (!empty($stored['materials']) && is_array($stored['materials'])) {
+            foreach ($stored['materials'] as $material) {
+                if (!is_array($material)) {
+                    continue;
+                }
+
+                $material_id = isset($material['id'])
+                    ? (string) $material['id']
+                    : (isset($material['name']) ? sanitize_title($material['name']) : '');
+
+                if ($material_id !== '' && !isset($merged_materials[$material_id])) {
+                    $merged_materials[$material_id] = wood_calc_normalize_material($material, $material_id);
                 }
             }
+        }
 
-            if (!empty(['items']) && is_array(['items'])) {
-                foreach (['items'] as ) {
-                     = isset(['id']) ? strval(['id']) : '';
-                    if ( !== '' && !isset([])) {
-                        [] = ;
-                    }
+        if (!empty($stored['items']) && is_array($stored['items'])) {
+            foreach ($stored['items'] as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+
+                $item_id = isset($item['id'])
+                    ? (string) $item['id']
+                    : 'legacy_' . md5(wp_json_encode($item));
+
+                if ($item_id !== '' && !isset($merged_items[$item_id])) {
+                    $item['id'] = $item_id;
+                    $merged_items[$item_id] = $item;
                 }
             }
         }
     }
 
-     = array(
-        'materials'   => array_values(),
-        'items'       => array_values(),
-        'settings'    => ,
-        'initialized' =>  && (!empty() || !empty())
+    $cached_data = array(
+        'materials' => array_values($merged_materials),
+        'items' => array_values($merged_items),
+        'settings' => $saved_settings,
+        'initialized' => $found_storage && (!empty($merged_materials) || !empty($merged_items)),
     );
 
-    if () {
-        update_option('wood_calc_store_v3', , false);
+    if ($found_storage) {
+        update_option('wood_calc_store_v3', $cached_data, false);
     }
 
-     = ;
-    return ;
+    return $cached_data;
 }
 
-// 2. AJAX: Fetch stored data
+/**
+ * Normalize historical material schemas to the current frontend schema.
+ */
+function wood_calc_normalize_material($material, $fallback_id = '') {
+    $name = isset($material['name']) ? sanitize_text_field($material['name']) : '';
+    $price = 0.0;
+
+    if (isset($material['price'])) {
+        $price = (float) $material['price'];
+    } elseif (isset($material['price_per_cm2'])) {
+        $price = (float) $material['price_per_cm2'];
+    } elseif (isset($material['rate'])) {
+        $price = (float) $material['rate'];
+    }
+
+    return array(
+        'id' => isset($material['id']) && $material['id'] !== '' ? sanitize_text_field((string) $material['id']) : $fallback_id,
+        'name' => $name,
+        'price' => $price,
+    );
+}
+
+// AJAX: Fetch stored data.
 add_action('wp_ajax_wood_calc_get', 'wood_calc_get_data');
 function wood_calc_get_data() {
     if (!check_ajax_referer('wood_calc_nonce', 'nonce', false)) {
@@ -87,11 +133,11 @@ function wood_calc_get_data() {
         wp_send_json_error(array('message' => 'Доступ заборонено.'), 403);
     }
 
-     = wood_calc_get_stored_data();
-    wp_send_json_success();
+    $data = wood_calc_get_stored_data();
+    wp_send_json_success($data);
 }
 
-// 3. AJAX: Save data to database with validation and sanitization
+// AJAX: Save data to database with validation and sanitization.
 add_action('wp_ajax_wood_calc_save', 'wood_calc_save_data');
 function wood_calc_save_data() {
     if (!check_ajax_referer('wood_calc_nonce', 'nonce', false)) {
@@ -101,101 +147,118 @@ function wood_calc_save_data() {
         wp_send_json_error(array('message' => 'Доступ заборонено.'), 403);
     }
 
-     = file_get_contents('php://input');
-    if (empty()) {
+    $raw = file_get_contents('php://input');
+    if (empty($raw)) {
         wp_send_json_error(array('message' => 'Порожні дані запиту.'), 400);
     }
 
-     = json_decode(, true);
-    if (!is_array() || !isset(['materials']) || !isset(['items'])) {
+    $data = json_decode($raw, true);
+    if (!is_array($data) || !isset($data['materials']) || !isset($data['items'])) {
         wp_send_json_error(array('message' => 'Невірна структура даних.'), 400);
     }
 
-    // Sanitize materials
-     = array();
-    if (is_array(['materials'])) {
-        foreach (['materials'] as ) {
-            if (!is_array()) continue;
-             = isset(['name']) ? sanitize_text_field(['name']) : '';
-             = isset(['price_per_cm2']) ? floatval(['price_per_cm2']) : (isset(['rate']) ? floatval(['rate']) : 0.0);
-            if ( === '' ||  <= 0) continue;
+    $materials = array();
+    if (is_array($data['materials'])) {
+        foreach ($data['materials'] as $material) {
+            if (!is_array($material)) {
+                continue;
+            }
 
-             = isset(['id']) ? sanitize_text_field(strval(['id'])) : sanitize_title();
-            [] = array(
-                'id'            => ,
-                'name'          => ,
-                'price_per_cm2' => 
+            $normalized = wood_calc_normalize_material($material);
+            if ($normalized['name'] === '' || !is_finite($normalized['price']) || $normalized['price'] <= 0) {
+                continue;
+            }
+
+            if ($normalized['id'] === '') {
+                $normalized['id'] = sanitize_title($normalized['name']);
+            }
+            $materials[] = $normalized;
+        }
+    }
+
+    $items = array();
+    if (is_array($data['items'])) {
+        foreach ($data['items'] as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $name = isset($item['name']) ? sanitize_text_field((string) $item['name']) : '';
+            if (function_exists('mb_substr')) {
+                $name = mb_substr($name, 0, 255);
+            } else {
+                $name = substr($name, 0, 255);
+            }
+            if ($name === '') {
+                continue;
+            }
+
+            $len = isset($item['len']) ? (float) $item['len'] : 0.0;
+            $width = isset($item['width']) ? (float) $item['width'] : 0.0;
+            $price = isset($item['price']) ? (float) $item['price'] : 0.0;
+            $qty = isset($item['qty']) ? (int) $item['qty'] : 1;
+
+            if (!is_finite($len) || !is_finite($width) || $len <= 0 || $width <= 0) {
+                continue;
+            }
+            if (!is_finite($price) || $price < 0) {
+                continue;
+            }
+
+            $qty = max(1, $qty);
+            $item_id = isset($item['id']) && $item['id'] !== ''
+                ? sanitize_text_field((string) $item['id'])
+                : 'item_' . time() . '_' . wp_rand(100, 999);
+
+            $items[] = array(
+                'id' => $item_id,
+                'name' => $name,
+                'material' => isset($item['material']) ? sanitize_text_field((string) $item['material']) : '',
+                'material_id' => isset($item['material_id']) ? sanitize_text_field((string) $item['material_id']) : '',
+                'len' => $len,
+                'width' => $width,
+                'area_cm2' => ($len * $width) / 100,
+                'price' => $price,
+                'qty' => $qty,
+                'in_invoice' => !isset($item['in_invoice']) || !empty($item['in_invoice']),
+                'selected' => isset($item['selected']) ? !empty($item['selected']) : true,
+                'photo' => isset($item['photo']) ? esc_url_raw((string) $item['photo']) : '',
             );
         }
     }
 
-    // Sanitize items
-     = array();
-    if (is_array(['items'])) {
-        foreach (['items'] as ) {
-            if (!is_array()) continue;
-             = isset(['name']) ? sanitize_text_field(mb_substr(['name'], 0, 255)) : '';
-            if ( === '') continue;
+    $input_settings = (isset($data['settings']) && is_array($data['settings'])) ? $data['settings'] : array();
+    $lang = (isset($input_settings['lang']) && $input_settings['lang'] === 'en') ? 'en' : 'uk';
+    $accent_color = (isset($input_settings['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', (string) $input_settings['accent_color']))
+        ? (string) $input_settings['accent_color']
+        : '#95b504';
+    $wipe_on_uninstall = !empty($input_settings['wipe_on_uninstall']);
+    $column_visibility = array('mat' => true, 'dims' => true, 'price' => true, 'qty' => true, 'sum' => true);
 
-             = isset(['len']) ? floatval(['len']) : 0.0;
-             = isset(['width']) ? floatval(['width']) : 0.0;
-             = isset(['qty']) ? max(1, intval(['qty'])) : 1;
-             = isset(['price']) ? max(0.0, floatval(['price'])) : 0.0;
-             = isset(['area_cm2']) ? floatval(['area_cm2']) : (( * ) / 100);
-
-             = isset(['id']) ? sanitize_text_field(strval(['id'])) : ('item_' . time() . '_' . wp_rand(100, 999));
-             = isset(['material']) ? sanitize_text_field(['material']) : '';
-             = isset(['material_id']) ? sanitize_text_field(strval(['material_id'])) : '';
-             = !isset(['in_invoice']) || !empty(['in_invoice']);
-             = isset(['selected']) ? !empty(['selected']) : true;
-
-            [] = array(
-                'id'          => ,
-                'name'        => ,
-                'material'    => ,
-                'material_id' => ,
-                'len'         => ,
-                'width'       => ,
-                'area_cm2'    => ,
-                'price'       => ,
-                'qty'         => ,
-                'in_invoice'  => ,
-                'selected'    => 
-            );
-        }
-    }
-
-    // Sanitize settings
-     = (isset(['settings']) && is_array(['settings'])) ? ['settings'] : array();
-     = (isset(['lang']) && ['lang'] === 'en') ? 'en' : 'uk';
-     = (isset(['accent_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', ['accent_color'])) ? ['accent_color'] : '#95b504';
-     = !empty(['wipe_on_uninstall']);
-
-     = array('mat' => true, 'dims' => true, 'price' => true, 'qty' => true, 'sum' => true);
-    if (isset(['column_visibility']) && is_array(['column_visibility'])) {
-        foreach ( as  => ) {
-            if (isset(['column_visibility'][])) {
-                [] = !empty(['column_visibility'][]);
+    if (isset($input_settings['column_visibility']) && is_array($input_settings['column_visibility'])) {
+        foreach ($column_visibility as $column => $default) {
+            if (array_key_exists($column, $input_settings['column_visibility'])) {
+                $column_visibility[$column] = !empty($input_settings['column_visibility'][$column]);
             }
         }
     }
 
-     = array(
-        'materials'   => ,
-        'items'       => ,
-        'settings'    => array(
-            'lang'              => ,
-            'accent_color'      => ,
-            'wipe_on_uninstall' => ,
-            'column_visibility' => 
+    $save_payload = array(
+        'materials' => $materials,
+        'items' => $items,
+        'settings' => array(
+            'lang' => $lang,
+            'accent_color' => $accent_color,
+            'wipe_on_uninstall' => $wipe_on_uninstall,
+            'column_visibility' => $column_visibility,
         ),
         'initialized' => true,
-        'updated_at'  => current_time('mysql')
+        'updated_at' => current_time('mysql'),
     );
 
-    update_option('wood_calc_store_v3', , false);
-    update_option('wood_calc_store_v4', , false);
-    update_option('wood_calc_store_backup', , false);
+    update_option('wood_calc_store_v3', $save_payload, false);
+    update_option('wood_calc_store_v4', $save_payload, false);
+    update_option('wood_calc_store_backup', $save_payload, false);
 
     wp_send_json_success(array('message' => 'Дані успішно збережено.'));
 }

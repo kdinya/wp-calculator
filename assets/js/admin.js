@@ -1972,7 +1972,7 @@
 
             if (nameInput) nameInput.value = '';
             if (matSelect) {
-                matSelect.innerHTML = materials.map(m => '<option value="' + escapeHtml(m.id) + '" data-name="' + escapeHtml(m.name) + '" data-rate="' + m.price_per_cm2 + '">' + escapeHtml(m.name) + ' (' + m.price_per_cm2 + ' ' + t('curr') + '/см²)</option>').join('');
+                matSelect.innerHTML = materials.map(m => '<option value="' + escapeHtml(m.id) + '" data-name="' + escapeHtml(m.name) + '" data-rate="' + m.price + '">' + escapeHtml(m.name) + ' (' + m.price + ' ' + t('curr') + '/см²)</option>').join('');
             }
             if (lenInput) lenInput.value = '1000';
             if (widthInput) widthInput.value = '500';
