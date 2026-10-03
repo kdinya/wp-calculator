@@ -153,13 +153,13 @@ class WpCalculatorGitHubUpdater {
 
         if (is_wp_error($response) || 200 !== wp_remote_retrieve_response_code($response)) {
             // Cache failed response for 1 hour to prevent blocking admin reloads
-            set_transient($cache_key, array('failed' => true), HOUR_IN_SECONDS);
+            set_transient($cache_key, array('failed' => true), 10 * MINUTE_IN_SECONDS);
             return null;
         }
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
         if (!is_array($body) || empty($body['tag_name']) || !preg_match('/^v?[0-9]+\.[0-9]+\.[0-9]+$/', (string) $body['tag_name'])) {
-            set_transient($cache_key, array('failed' => true), HOUR_IN_SECONDS);
+            set_transient($cache_key, array('failed' => true), 10 * MINUTE_IN_SECONDS);
             return null;
         }
 

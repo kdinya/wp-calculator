@@ -1302,7 +1302,7 @@
                 const isInInv = (item.in_invoice !== false);
 
                 return `
-                    <tr id="catalog-row-${item.id}" data-id="${item.id}">
+                    <tr id="catalog-row-${escapeHtml(item.id)}" data-id="${escapeHtml(item.id)}">
                         <td style="text-align:center;">
                             <span class="wc-drag-handle" title="Перетягнути для зміни порядку">⠿</span>
                         </td>

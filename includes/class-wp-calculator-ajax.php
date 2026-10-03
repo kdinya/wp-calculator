@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 /**
  * Retrieves saved calculator data with in-memory caching and complete backward-compatible merging.
  */
+if (!function_exists('wood_calc_get_stored_data')) {
 function wood_calc_get_stored_data() {
     static $cached_data = null;
 
@@ -109,10 +110,12 @@ function wood_calc_get_stored_data() {
 
     return $cached_data;
 }
+}
 
 /**
  * Normalize historical material schemas to the current frontend schema.
  */
+if (!function_exists('wood_calc_normalize_material')) {
 function wood_calc_normalize_material($material, $fallback_id = '') {
     $name = isset($material['name']) ? sanitize_text_field($material['name']) : '';
     $price = 0.0;
@@ -131,9 +134,11 @@ function wood_calc_normalize_material($material, $fallback_id = '') {
         'price' => $price,
     );
 }
+}
 
 // AJAX: Fetch stored data.
 add_action('wp_ajax_wood_calc_get', 'wood_calc_get_data');
+if (!function_exists('wood_calc_get_data')) {
 function wood_calc_get_data() {
     if (!check_ajax_referer('wood_calc_nonce', 'nonce', false)) {
         wp_send_json_error(array('message' => 'Помилка безпеки: недійсний nonce.'), 403);
@@ -145,9 +150,11 @@ function wood_calc_get_data() {
     $data = wood_calc_get_stored_data();
     wp_send_json_success($data);
 }
+}
 
 // AJAX: Save data to database with validation and sanitization.
 add_action('wp_ajax_wood_calc_save', 'wood_calc_save_data');
+if (!function_exists('wood_calc_save_data')) {
 function wood_calc_save_data() {
     if (!check_ajax_referer('wood_calc_nonce', 'nonce', false)) {
         wp_send_json_error(array('message' => 'Помилка безпеки: недійсний nonce.'), 403);
@@ -268,4 +275,5 @@ function wood_calc_save_data() {
     update_option('wood_calc_store_v3', $save_payload, false);
 
     wp_send_json_success(array('message' => 'Дані успішно збережено.'));
+}
 }
