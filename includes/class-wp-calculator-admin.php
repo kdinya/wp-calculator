@@ -536,6 +536,7 @@ class WpCalculatorAdmin {
                     <div class="modal-content">
                         <h3 style="margin-top:0; font-size:18px; color:var(--tc-dark);" data-i18n="modal_edit_prod_title"><?php echo esc_html($t['modal_edit_prod_title']); ?></h3>
                         <input type="hidden" id="edit-prod-id">
+                    <input type="hidden" id="edit-prod-source-id">
                         <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
                             <div>
                                 <label data-i18n="lbl_add_name"><?php echo esc_html($t['lbl_add_name']); ?></label>

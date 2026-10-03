@@ -31,12 +31,13 @@
         }
 
 
-        const I18N = {
+                const I18N = {
             uk: {
                 tab_calc: "Калькулятор",
+                tab_appearance: "Оформлення",
                 tab_settings: "Налаштування",
                 header_title: "🛠️ Розрахунок вартості виробів",
-                btn_backup: "💾 Бекап",
+                btn_backup: "Завантажити бекап (JSON)",
                 syncing: "● Синхронізація...",
                 saved: "● Збережено в WordPress",
                 offline: "● Локальний режим",
@@ -53,7 +54,6 @@
                 lbl_add_price: "Ціна/шт (грн)",
                 btn_add_save: "+ Зберегти",
                 sec3_title: "3. Список виробів",
-                invoice_title: "РОЗРАХУНОК ЗАМОВЛЕННЯ",
                 chk_hide_unselected: "Сховати невиділені",
                 btn_select_all: "Виділити всі",
                 btn_deselect_all: "Зняти всі",
@@ -68,25 +68,28 @@
                 summary_selected: "Обрано виробів:",
                 summary_qty: "Загальна к-сть:",
                 summary_sum: "Загальна сума:",
+                pcs: "шт",
+                curr: "грн",
+                sq_cm: "см²",
                 btn_invoice_mode: "📸 Накладна для скріна",
                 btn_exit_invoice: "← Вийти з режиму накладної",
+                invoice_title: "РОЗРАХУНОК ЗАМОВЛЕННЯ",
                 sec_materials_title: "📦 Довідник матеріалів",
                 lbl_mat_name: "Назва матеріалу",
                 lbl_mat_rate: "Тариф за 1 см² (грн)",
                 btn_mat_add: "+ Додати",
-                settings_title: "⚙️ Налаштування калькулятора",
-                settings_lang: "Мова інтерфейсу",
-                settings_lang_desc: "Обрана мова зберігається автоматично та використовується для калькулятора, каталогу і накладної.",
-                updater_title: "🚀 Оновлення плагіна з GitHub",
-                lbl_wipe_uninstall: "Видаляти всі дані та налаштування при повному видаленні плагіна",
-                desc_wipe_uninstall: "Якщо вимкнено — ваші створені матеріали, каталог виробів та налаштування збережуться навіть після деінсталяції плагіна.",
-                tab_appearance: "Оформлення",
-                backup_title: "💾 Резервне копіювання даних",
-                backup_desc: "Збережіть повну резервну копію ваших матеріалів, виробів та налаштувань у файлі JSON для безпеки або перенесення.",
                 appearance_title: "🎨 Зовнішній вигляд",
                 lbl_accent_color: "Акцентний колір кнопок та активних елементів",
                 lbl_custom_color: "Довільний колір:",
-                appearance_desc: "Обраний колір застосовується до кнопок, чекбоксів, підсвітки та акцентних рамок інтерфейсу. Вибір зберігається автоматично.",
+                appearance_desc: "Обраний колір миттєво застосовується до кнопок, чекбоксів, підсвітки та рамок інтерфейсу без перезавантаження сторінки.",
+                settings_title: "⚙️ Налаштування калькулятора",
+                settings_lang: "Мова інтерфейсу",
+                settings_lang_desc: "Обрана мова зберігається автоматично та використовується для калькулятора, каталогу і накладної.",
+                backup_title: "💾 Резервне копіювання даних",
+                backup_desc: "Збережіть повну резервну копію ваших матеріалів, виробів та налаштувань у файлі JSON для безпеки або перенесення.",
+                lbl_wipe_uninstall: "Видаляти всі дані та налаштування при повному видаленні плагіна",
+                desc_wipe_uninstall: "Якщо вимкнено — ваші створені матеріали, каталог виробів та налаштування збережуться навіть після деінсталяції плагіна.",
+                updater_title: "🚀 Оновлення плагіна з GitHub",
                 lbl_current_ver: "Поточна версія:",
                 lbl_latest_ver: "Остання в GitHub:",
                 btn_check_update: "Перевірити оновлення",
@@ -105,19 +108,17 @@
                 btn_cancel: "Скасувати",
                 btn_save: "Зберегти зміни",
                 btn_delete: "Видалити",
-                curr: "грн",
-                sq_cm: "см²",
-                pcs: "шт",
                 no_items: "Немає створених виробів",
                 no_materials: "Матеріали відсутні. Додайте перший матеріал у довіднику.",
                 enter_valid_name: "Будь ласка, введіть коректну назву та розміри",
-                enter_valid_mat: "Будь ласка, введіть назву породи та коректний тариф"
+                enter_valid_mat: "Будь ласка, введіть назву матеріалу та коректний тариф",
             },
             en: {
                 tab_calc: "Calculator",
+                tab_appearance: "Appearance",
                 tab_settings: "Settings",
-                header_title: "🛠️ Wood Product Cost Calculator",
-                btn_backup: "💾 Backup",
+                header_title: "🛠️ Product Cost Calculator",
+                btn_backup: "Download Backup (JSON)",
                 syncing: "● Syncing...",
                 saved: "● Saved to WordPress",
                 offline: "● Offline mode",
@@ -125,49 +126,51 @@
                 lbl_calc_mat: "Material (rate per 1 cm²)",
                 lbl_calc_len: "Length (mm)",
                 lbl_calc_width: "Width (mm)",
-                btn_send_to_form: "Send to product ↓",
-                res_area: "Calculated area:",
-                res_price: "Price per 1 pc:",
+                btn_send_to_form: "Add to Product Form ↓",
+                res_area: "Calculated Area:",
+                res_price: "Unit Price:",
                 sec2_title: "2. Add Product to List",
-                lbl_add_name: "Product name",
-                lbl_add_mat: "Choose material",
-                lbl_add_price: "Price/pc (UAH)",
+                lbl_add_name: "Product Name",
+                lbl_add_mat: "Select Material",
+                lbl_add_price: "Price/unit (UAH)",
                 btn_add_save: "+ Save",
-                sec3_title: "3. Product Catalog",
-                invoice_title: "ORDER CALCULATION",
-                chk_hide_unselected: "Hide unselected",
-                btn_select_all: "Select all",
-                btn_deselect_all: "Deselect all",
-                inv_cols_title: "Invoice columns:",
+                sec3_title: "3. Product List",
+                chk_hide_unselected: "Hide Unselected",
+                btn_select_all: "Select All",
+                btn_deselect_all: "Deselect All",
+                inv_cols_title: "Columns for Invoice:",
                 col_photo: "Photo",
                 col_material: "Material",
                 col_dims: "Dimensions",
                 col_price_pc: "Price / 1 pc",
                 col_qty: "Qty",
-                col_sum: "Sum",
+                col_sum: "Total",
                 col_actions: "Actions",
-                summary_selected: "Selected items:",
-                summary_qty: "Total qty:",
-                summary_sum: "Total sum:",
-                btn_invoice_mode: "📸 Invoice View for Screenshot",
-                btn_exit_invoice: "← Exit Invoice View",
-                sec_materials_title: "📦 Material Directory",
-                lbl_mat_name: "Wood type name",
+                summary_selected: "Selected products:",
+                summary_qty: "Total quantity:",
+                summary_sum: "Grand total:",
+                pcs: "pcs",
+                curr: "UAH",
+                sq_cm: "cm²",
+                btn_invoice_mode: "📸 Invoice for Screenshot",
+                btn_exit_invoice: "← Exit Invoice Mode",
+                invoice_title: "ORDER ESTIMATE",
+                sec_materials_title: "📦 Materials Directory",
+                lbl_mat_name: "Material Name",
                 lbl_mat_rate: "Rate per 1 cm² (UAH)",
                 btn_mat_add: "+ Add",
-                settings_title: "⚙️ Calculator Settings",
-                settings_lang: "Interface Language",
-                settings_lang_desc: "Selected language is saved automatically and used for calculator, catalog, and invoice.",
-                updater_title: "🚀 GitHub Plugin Updates",
-                lbl_wipe_uninstall: "Delete all data and settings on plugin uninstallation",
-                desc_wipe_uninstall: "If disabled, your created materials, products catalog, and settings are preserved even after plugin uninstall.",
-                tab_appearance: "Appearance",
-                backup_title: "💾 Data Backup",
-                backup_desc: "Save a complete backup of your materials, items, and settings in JSON format for security or migration.",
                 appearance_title: "🎨 Appearance",
                 lbl_accent_color: "Accent color for buttons and active elements",
                 lbl_custom_color: "Custom color:",
-                appearance_desc: "The selected color is applied to buttons, checkboxes, highlights and accent borders. Your choice is saved automatically.",
+                appearance_desc: "The selected color is instantly applied to buttons, checkboxes, highlights, and borders in real time without refreshing.",
+                settings_title: "⚙️ Calculator Settings",
+                settings_lang: "Interface Language",
+                settings_lang_desc: "The chosen language is saved automatically and applies to the calculator, catalog, and invoice.",
+                backup_title: "💾 Data Backup",
+                backup_desc: "Save a complete backup of your materials, items, and settings in JSON format for security or migration.",
+                lbl_wipe_uninstall: "Delete all data and settings on full plugin uninstall",
+                desc_wipe_uninstall: "When unchecked, your created materials, catalog items, and settings are preserved even after uninstalling the plugin.",
+                updater_title: "🚀 GitHub Plugin Updater",
                 lbl_current_ver: "Current version:",
                 lbl_latest_ver: "Latest on GitHub:",
                 btn_check_update: "Check for Updates",
@@ -186,13 +189,10 @@
                 btn_cancel: "Cancel",
                 btn_save: "Save Changes",
                 btn_delete: "Delete",
-                curr: "UAH",
-                sq_cm: "cm²",
-                pcs: "pcs",
                 no_items: "No products created yet",
                 no_materials: "No materials added yet. Please add a material in directory.",
                 enter_valid_name: "Please enter valid name and dimensions",
-                enter_valid_mat: "Please enter wood name and valid rate"
+                enter_valid_mat: "Please enter material name and valid rate",
             }
         };
 
@@ -776,15 +776,18 @@
             saveData();
         };
 
-        window.openEditProductModal = function(id) {
-            const item = items.find(it => it.id === id);
+                window.openEditProductModal = function(id) {
+            const item = items.find(it => String(it.id) === String(id));
             if (!item) return;
 
             document.getElementById('edit-prod-id').value = item.id;
-            document.getElementById('edit-prod-name').value = item.name;
-            document.getElementById('edit-prod-len').value = item.len;
-            document.getElementById('edit-prod-width').value = item.width;
-            document.getElementById('edit-prod-price').value = item.price;
+            const srcIdEl = document.getElementById('edit-prod-source-id');
+            if (srcIdEl) srcIdEl.value = '';
+
+            document.getElementById('edit-prod-name').value = item.name || '';
+            document.getElementById('edit-prod-len').value = item.len || '';
+            document.getElementById('edit-prod-width').value = item.width || '';
+            document.getElementById('edit-prod-price').value = item.price || '';
 
             const editMatSel = document.getElementById('edit-prod-mat');
             if (editMatSel) {
@@ -801,17 +804,20 @@
 
         window.closeEditProductModal = function() {
             document.getElementById('modal-edit-product').style.display = 'none';
+            document.getElementById('edit-prod-id').value = '';
+            const srcIdEl = document.getElementById('edit-prod-source-id');
+            if (srcIdEl) srcIdEl.value = '';
         };
 
         window.saveEditedProduct = function() {
             const id = document.getElementById('edit-prod-id').value;
-            const item = items.find(it => it.id === id);
-            if (!item) return;
+            const sourceIdEl = document.getElementById('edit-prod-source-id');
+            const sourceId = sourceIdEl ? sourceIdEl.value : '';
 
             const name = document.getElementById('edit-prod-name').value.trim();
             const editMatSel = document.getElementById('edit-prod-mat');
             const selectedOpt = editMatSel ? editMatSel.options[editMatSel.selectedIndex] : null;
-            const matName = selectedOpt ? selectedOpt.getAttribute('data-name') : item.material;
+            const matName = selectedOpt ? selectedOpt.getAttribute('data-name') : '';
             const len = parseFloat(document.getElementById('edit-prod-len').value) || 0;
             const width = parseFloat(document.getElementById('edit-prod-width').value) || 0;
             const price = parseFloat(document.getElementById('edit-prod-price').value) || 0;
@@ -821,11 +827,35 @@
                 return;
             }
 
-            item.name = name;
-            item.material = matName;
-            item.len = len;
-            item.width = width;
-            item.price = price;
+            if (!id && sourceId) {
+                // Creating a duplicated product ONLY now upon save!
+                const newId = 'p_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+                const newProduct = {
+                    id: newId,
+                    name: name,
+                    material: matName,
+                    len: len,
+                    width: width,
+                    price: price,
+                    qty: 1,
+                    selected: true
+                };
+                const srcIdx = items.findIndex(it => String(it.id) === String(sourceId));
+                if (srcIdx !== -1) {
+                    items.splice(srcIdx + 1, 0, newProduct);
+                } else {
+                    items.push(newProduct);
+                }
+            } else if (id) {
+                // Editing existing product
+                const item = items.find(it => String(it.id) === String(id));
+                if (!item) return;
+                item.name = name;
+                item.material = matName || item.material;
+                item.len = len;
+                item.width = width;
+                item.price = price;
+            }
 
             closeEditProductModal();
             renderItems();
@@ -836,21 +866,34 @@
             const item = items.find(it => String(it.id) === String(id));
             if (!item) return;
 
-            const copy = JSON.parse(JSON.stringify(item));
-            copy.id = 'p_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-            const suffix = (currentLang === 'uk' ? ' (копія)' : ' (copy)');
-            copy.name = (copy.name || '') + suffix;
+            // Prepare modal for copying, DO NOT add to items yet!
+            document.getElementById('edit-prod-id').value = '';
+            let srcIdEl = document.getElementById('edit-prod-source-id');
+            if (!srcIdEl) {
+                srcIdEl = document.createElement('input');
+                srcIdEl.type = 'hidden';
+                srcIdEl.id = 'edit-prod-source-id';
+                document.getElementById('modal-edit-product').appendChild(srcIdEl);
+            }
+            srcIdEl.value = item.id;
 
-            const idx = items.findIndex(it => String(it.id) === String(id));
-            if (idx !== -1) {
-                items.splice(idx + 1, 0, copy);
-            } else {
-                items.push(copy);
+            const suffix = (currentLang === 'uk' ? ' (копія)' : ' (copy)');
+            document.getElementById('edit-prod-name').value = (item.name || '') + suffix;
+            document.getElementById('edit-prod-len').value = item.len || '';
+            document.getElementById('edit-prod-width').value = item.width || '';
+            document.getElementById('edit-prod-price').value = item.price || '';
+
+            const editMatSel = document.getElementById('edit-prod-mat');
+            if (editMatSel) {
+                for (let i = 0; i < editMatSel.options.length; i++) {
+                    if (editMatSel.options[i].getAttribute('data-name') === item.material) {
+                        editMatSel.selectedIndex = i;
+                        break;
+                    }
+                }
             }
 
-            renderItems();
-            saveData(true);
-            openEditProductModal(copy.id);
+            document.getElementById('modal-edit-product').style.display = 'flex';
         };
 
         window.askDeleteItem = function(id) {
@@ -903,7 +946,7 @@
                 return `
                     <tr id="row-${item.id}" data-id="${item.id}">
                         <td class="no-invoice" style="text-align:center;">
-                            <span class="wc-drag-handle" title="Перетягнути для зміни порядку" draggable="true">⠿</span>
+                            <span class="wc-drag-handle" title="Перетягнути для зміни порядку">⠿</span>
                         </td>
                         <td>
                             <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="setItemSelected('${item.id}', this.checked)">
