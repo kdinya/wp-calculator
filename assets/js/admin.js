@@ -364,7 +364,9 @@
                 }
             });
 
-            if (tabName === 'appearance') {
+            if (tabName === 'catalog') {
+                renderCatalogTab();
+            } else if (tabName === 'appearance') {
                 renderColorPresets();
             }
         };
@@ -974,41 +976,39 @@
             }
         };
 
-        window.openAddFromCatalogModal = function() {
+                window.openAddFromCatalogModal = function() {
             const modal = document.getElementById('modal-catalog-picker');
             const container = document.getElementById('catalog-picker-list');
             if (!modal || !container) return;
 
-            const notInInv = items.filter(it => it.in_invoice === false);
             if (items.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding:24px; color:#64748b;">${t('no_catalog_items')}</div>`;
-            } else if (notInInv.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align:center; padding:24px; color:#64748b;">
-                        <p style="margin:0 0 12px 0;">${t('all_items_in_invoice')}</p>
-                        <button type="button" class="btn btn-outline btn-sm" onclick="closeAddFromCatalogModal(); switchWcTab('catalog');">
-                            ${t('tab_catalog')}
-                        </button>
-                    </div>
-                `;
+                container.innerHTML = '<div style="text-align:center; padding:24px; color:#64748b;">' + t('no_catalog_items') + '</div>';
             } else {
-                container.innerHTML = `
-                    <div style="display:flex; flex-direction:column; gap:8px;">
-                        ${notInInv.map(it => `
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">
-                                <div>
-                                    <strong style="color:var(--tc-dark); font-size:14px;">${escapeHtml(it.name)}</strong>
-                                    <div style="font-size:12px; color:#64748b; margin-top:2px;">
-                                        ${it.material ? `${escapeHtml(it.material)} · ` : ''}${it.len && it.width ? `${it.len}×${it.width} мм · ` : ''}${parseFloat(it.price||0).toFixed(2)} ${t('curr')}
-                                    </div>
-                                </div>
-                                <button type="button" class="btn btn-green btn-sm" onclick="addToInvoice('${it.id}'); openAddFromCatalogModal();">
-                                    ${t('btn_add_to_inv')}
-                                </button>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
+                container.innerHTML = '<div style="display:flex; flex-direction:column; gap:8px;">' +
+                    items.map(it => {
+                        const isInInv = (it.in_invoice !== false);
+                        const q = it.qty || 1;
+                        return '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">' +
+                            '<div>' +
+                                '<div style="display:flex; align-items:center; gap:8px;">' +
+                                    '<strong style="color:var(--tc-dark); font-size:14px;">' + escapeHtml(it.name) + '</strong>' +
+                                    (isInInv ? '<span style="font-size:11px; font-weight:600; padding:2px 6px; background:#dcfce7; color:#166534; border-radius:4px;">✓ ' + t('in_invoice_badge') + ' (' + q + ' шт)</span>' : '') +
+                                '</div>' +
+                                '<div style="font-size:12px; color:#64748b; margin-top:3px;">' +
+                                    (it.material ? escapeHtml(it.material) + ' · ' : '') +
+                                    ((it.len && it.width) ? it.len + '×' + it.width + ' мм · ' : '') +
+                                    parseFloat(it.price || 0).toFixed(2) + ' ' + t('curr') +
+                                '</div>' +
+                            '</div>' +
+                            '<div style="display:flex; gap:6px;">' +
+                                (isInInv ?
+                                    '<button type="button" class="btn btn-outline btn-sm" onclick="setItemQty(\' + it.id + \', ' + (q + 1) + '); openAddFromCatalogModal();" title="Збільшити кількість">+ 1 шт</button>' :
+                                    '<button type="button" class="btn btn-green btn-sm" onclick="addToInvoice(\'' + it.id + '\'); openAddFromCatalogModal();">' + t('btn_add_to_inv') + '</button>'
+                                ) +
+                            '</div>' +
+                        '</div>';
+                    }).join('') +
+                '</div>';
             }
 
             modal.style.display = 'flex';
@@ -1066,7 +1066,7 @@
                 `;
             }).join('');
 
-            setupUnifiedDnD('catalog-tab-tbody', (srcId, targetId, isBelow) => {
+            setupUnifiedTableDnD('catalog-tab-tbody', (srcId, targetId, isBelow) => {
                 const srcIdx = items.findIndex(it => String(it.id) === String(srcId));
                 const targetIdx = items.findIndex(it => String(it.id) === String(targetId));
                 if (srcIdx !== -1 && targetIdx !== -1) {
@@ -1138,7 +1138,672 @@
             }).join('');
 
             applyColumnVisibility();
-            setupDragAndDrop();
+            setupUnifiedTableDnD('items-tbody', (srcId, targetId, isBelow) => {
+                const srcIdx = items.findIndex(it => String(it.id) === String(srcId));
+                const targetIdx = items.findIndex(it => String(it.id) === String(targetId));
+                if (srcIdx !== -1 && targetIdx !== -1) {
+                    const [moved] = items.splice(srcIdx, 1);
+                    let insertAt = items.findIndex(it => String(it.id) === String(targetId));
+                    if (isBelow) insertAt += 1;
+                    items.splice(insertAt, 0, moved);
+                    renderItems();
+                    renderCatalogTab();
+                    saveData();
+                }
+            });
+            updateCalculations();
+        }
+
+        window.setItemSelected = function(id, selected) {
+            const item = items.find(it => it.id === id);
+            if (item) {
+                item.selected = selected;
+                saveData(true);
+                updateCalculations();
+            }
+        };
+
+        window.setItemQty = function(id, val) {
+            const item = items.find(it => it.id === id);
+            if (item) {
+                item.qty = Math.max(1, parseInt(val, 10) || 1);
+                saveData(true);
+                renderItems();
+            }
+        };
+
+        window.toggleSelectAll = function(selectAll) {
+            items.forEach(it => it.selected = selectAll);
+            const topCb = document.getElementById('select-all-top');
+            if (topCb) topCb.checked = selectAll;
+            saveData(true);
+            renderItems();
+        };
+
+        function updateCalculations() {
+            let selectedCount = 0;
+            let totalQty = 0;
+            let grandTotal = 0;
+
+            items.forEach(item => {
+                if (item.selected) {
+                    selectedCount++;
+                    const qty = item.qty || 1;
+                    totalQty += qty;
+                    grandTotal += (item.price * qty);
+                }
+            });
+
+            const countEl = document.getElementById('sum-items-count');
+            const qtyEl = document.getElementById('sum-total-qty');
+            const sumEl = document.getElementById('sum-grand-total');
+
+            if (countEl) countEl.textContent = selectedCount;
+            if (qtyEl) qtyEl.textContent = totalQty;
+            if (sumEl) sumEl.textContent = grandTotal.toFixed(2);
+        }
+
+        window.toggleColumnVisibility = function(colName, isVisible) {
+            columnVisibility[colName] = isVisible;
+            applyColumnVisibility();
+            saveData(true);
+        };
+
+        function applyColumnVisibility() {
+            const setDisplay = (selector, visible) => {
+                document.querySelectorAll(selector).forEach(el => {
+                    el.style.display = visible ? '' : 'none';
+                });
+            };
+
+            setDisplay('.col-photo-header, .col-photo-cell', columnVisibility.photo);
+            setDisplay('.col-mat-header, .col-mat-cell', columnVisibility.mat);
+            setDisplay('.col-dims-header, .col-dims-cell', columnVisibility.dims);
+            setDisplay('.col-price-header, .col-price-cell', columnVisibility.price);
+            setDisplay('.col-qty-header, .col-qty-cell', columnVisibility.qty);
+            setDisplay('.col-sum-header, .col-sum-cell', columnVisibility.sum);
+        }
+
+        window.enterInvoiceMode = function() {
+            document.body.classList.add('invoice-mode');
+            const dateEl = document.getElementById('inv-date');
+            if (dateEl) {
+                const now = new Date();
+                dateEl.textContent = now.toLocaleDateString(currentLang === 'uk' ? 'uk-UA' : 'en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            }
+            const exitBtn = document.getElementById('exit-invoice-container');
+            if (exitBtn) exitBtn.style.display = 'block';
+        };
+
+        window.exitInvoiceMode = function() {
+            document.body.classList.remove('invoice-mode');
+            const exitBtn = document.getElementById('exit-invoice-container');
+            if (exitBtn) exitBtn.style.display = 'none';
+        };
+
+        
+        
+        // --- UNIFIED DRAG AND DROP (MOUSE + MOBILE TOUCH) ---
+        function setupUnifiedTableDnD(tbodyId, onReorder) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+
+            const rows = Array.from(tbody.querySelectorAll('tr[data-id]'));
+            let draggedRow = null;
+            let touchTargetRow = null;
+            let touchInsertBelow = false;
+
+            rows.forEach(row => {
+                const handle = row.querySelector('.wc-drag-handle');
+                if (!handle) return;
+
+                // Mouse Drag-and-Drop
+                handle.onmousedown = () => { row.draggable = true; };
+                handle.onmouseup = () => { row.draggable = false; };
+
+                row.ondragstart = (e) => {
+                    if (!row.draggable) {
+                        e.preventDefault();
+                        return;
+                    }
+                    draggedRow = row;
+                    row.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', row.getAttribute('data-id') || '');
+                };
+
+                row.ondragend = () => {
+                    row.draggable = false;
+                    row.classList.remove('dragging');
+                    rows.forEach(r => r.classList.remove('drop-above', 'drop-below'));
+                    draggedRow = null;
+                };
+
+                row.ondragover = (e) => {
+                    e.preventDefault();
+                    if (!draggedRow || draggedRow === row) return;
+                    const rect = row.getBoundingClientRect();
+                    const mid = rect.top + rect.height / 2;
+                    row.classList.remove('drop-above', 'drop-below');
+                    if (e.clientY < mid) {
+                        row.classList.add('drop-above');
+                    } else {
+                        row.classList.add('drop-below');
+                    }
+                };
+
+                row.ondragleave = () => {
+                    row.classList.remove('drop-above', 'drop-below');
+                };
+
+                row.ondrop = (e) => {
+                    e.preventDefault();
+                    if (!draggedRow || draggedRow === row) return;
+                    const srcId = draggedRow.getAttribute('data-id');
+                    const targetId = row.getAttribute('data-id');
+                    const isBelow = row.classList.contains('drop-below');
+                    row.classList.remove('drop-above', 'drop-below');
+                    if (srcId && targetId && onReorder) {
+                        onReorder(srcId, targetId, isBelow);
+                    }
+                };
+
+                // Mobile Touch Drag-and-Drop on Handle
+                handle.ontouchstart = (e) => {
+                    if (e.touches.length !== 1) return;
+                    draggedRow = row;
+                    row.classList.add('dragging');
+                    touchTargetRow = null;
+                };
+
+                handle.ontouchmove = (e) => {
+                    if (!draggedRow || e.touches.length !== 1) return;
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (!elUnder) return;
+
+                    const target = elUnder.closest('tr[data-id]');
+                    rows.forEach(r => r.classList.remove('drop-above', 'drop-below'));
+
+                    if (target && target !== draggedRow && target.closest('tbody') === tbody) {
+                        touchTargetRow = target;
+                        const rect = target.getBoundingClientRect();
+                        const mid = rect.top + rect.height / 2;
+                        touchInsertBelow = (touch.clientY >= mid);
+                        target.classList.add(touchInsertBelow ? 'drop-below' : 'drop-above');
+                    } else {
+                        touchTargetRow = null;
+                    }
+                };
+
+                handle.ontouchend = () => {
+                    if (!draggedRow) return;
+                    draggedRow.classList.remove('dragging');
+                    rows.forEach(r => r.classList.remove('drop-above', 'drop-below'));
+
+                    if (touchTargetRow && draggedRow !== touchTargetRow) {
+                        const srcId = draggedRow.getAttribute('data-id');
+                        const targetId = touchTargetRow.getAttribute('data-id');
+                        if (srcId && targetId && onReorder) {
+                            onReorder(srcId, targetId, touchInsertBelow);
+                        }
+                    }
+                    draggedRow = null;
+                    touchTargetRow = null;
+                };
+
+                handle.ontouchcancel = () => {
+                    if (draggedRow) draggedRow.classList.remove('dragging');
+                    rows.forEach(r => r.classList.remove('drop-above', 'drop-below'));
+                    draggedRow = null;
+                    touchTargetRow = null;
+                };
+            });
+        }
+
+        // --- EXPORT & SHARE FUNCTIONS (100% COMPLETE & WORKING) ---
+        function getInvoiceDataForExport() {
+            const invoiceItems = items.filter(it => it.in_invoice !== false && it.selected !== false);
+            const now = new Date();
+            const dateStr = now.toLocaleDateString(currentLang === 'uk' ? 'uk-UA' : 'en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            let totalQty = 0;
+            let grandTotal = 0;
+            invoiceItems.forEach(it => {
+                const q = it.qty || 1;
+                totalQty += q;
+                grandTotal += (parseFloat(it.price || 0) * q);
+            });
+            return { items: invoiceItems, dateStr, totalQty, grandTotal };
+        }
+
+        function createInvoiceCanvasBlob() {
+            return new Promise((resolve) => {
+                const { items: invItems, dateStr, totalQty, grandTotal } = getInvoiceDataForExport();
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const scale = 2; // High-res Retina
+
+                const width = 800;
+                const headerHeight = 110;
+                const rowHeight = 44;
+                const footerHeight = 90;
+                const height = headerHeight + Math.max(1, invItems.length) * rowHeight + footerHeight;
+
+                canvas.width = width * scale;
+                canvas.height = height * scale;
+                ctx.scale(scale, scale);
+
+                // Background
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, width, height);
+
+                // Header Dark Graphite
+                ctx.fillStyle = '#24272a';
+                ctx.fillRect(0, 0, width, headerHeight);
+
+                // Header Title
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 22px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+                ctx.fillText(currentLang === 'uk' ? 'РОЗРАХУНОК ЗАМОВЛЕННЯ' : 'ORDER CALCULATION', 36, 48);
+
+                // Header Date
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+                ctx.fillText(dateStr, 36, 78);
+
+                // Accent Line
+                ctx.fillStyle = accentColor || '#95b504';
+                ctx.fillRect(0, headerHeight - 4, width, 4);
+
+                // Table Header
+                let y = headerHeight + 30;
+                ctx.fillStyle = '#64748b';
+                ctx.font = 'bold 12px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+                ctx.fillText('№', 36, y);
+                ctx.fillText(currentLang === 'uk' ? 'НАЗВА ВИРОБУ' : 'PRODUCT NAME', 80, y);
+                ctx.fillText(currentLang === 'uk' ? 'РОЗМІРИ' : 'DIMENSIONS', 420, y);
+                ctx.fillText(currentLang === 'uk' ? 'К-СТЬ' : 'QTY', 560, y);
+                ctx.fillText(currentLang === 'uk' ? 'ЦІНА' : 'PRICE', 630, y);
+                ctx.fillText(currentLang === 'uk' ? 'СУМА' : 'TOTAL', 710, y);
+
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(36, y + 10);
+                ctx.lineTo(width - 36, y + 10);
+                ctx.stroke();
+
+                y += 24;
+
+                if (invItems.length === 0) {
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+                    ctx.fillText(currentLang === 'uk' ? 'Немає вибраних виробів' : 'No selected products', 36, y + 20);
+                    y += rowHeight;
+                } else {
+                    invItems.forEach((it, idx) => {
+                        const q = it.qty || 1;
+                        const price = parseFloat(it.price || 0).toFixed(2);
+                        const sum = (parseFloat(it.price || 0) * q).toFixed(2);
+                        const dims = (it.len && it.width) ? (it.len + ' × ' + it.width + ' мм') : '-';
+
+                        ctx.fillStyle = '#334155';
+                        ctx.font = '13px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+                        ctx.fillText(String(idx + 1), 36, y);
+
+                        ctx.fillStyle = '#0f172a';
+                        ctx.font = 'bold 13px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+                        const nameText = it.name.length > 36 ? it.name.substring(0, 34) + '...' : it.name;
+                        ctx.fillText(nameText, 80, y);
+
+                        ctx.fillStyle = '#64748b';
+                        ctx.font = '13px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+                        ctx.fillText(dims, 420, y);
+                        ctx.fillText(String(q) + (currentLang === 'uk' ? ' шт' : ' pcs'), 560, y);
+                        ctx.fillText(price, 630, y);
+
+                        ctx.fillStyle = '#0f172a';
+                        ctx.font = 'bold 13px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+                        ctx.fillText(sum + ' ' + t('curr'), 710, y);
+
+                        ctx.strokeStyle = '#f1f5f9';
+                        ctx.beginPath();
+                        ctx.moveTo(36, y + 14);
+                        ctx.lineTo(width - 36, y + 14);
+                        ctx.stroke();
+
+                        y += rowHeight;
+                    });
+                }
+
+                // Footer Box
+                y += 10;
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(36, y, width - 72, 50);
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.strokeRect(36, y, width - 72, 50);
+
+                ctx.fillStyle = '#334155';
+                ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+                ctx.fillText((currentLang === 'uk' ? 'Разом товарів: ' : 'Total items: ') + totalQty + (currentLang === 'uk' ? ' шт.' : ' pcs.'), 56, y + 31);
+
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 16px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+                ctx.fillText((currentLang === 'uk' ? 'ДО СПЛАТИ: ' : 'TOTAL TO PAY: ') + grandTotal.toFixed(2) + ' ' + t('curr'), 520, y + 31);
+
+                canvas.toBlob((blob) => resolve({ blob, canvas }), 'image/png');
+            });
+        }
+
+        window.downloadInvoicePng = function() {
+            createInvoiceCanvasBlob().then(({ blob }) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const today = new Date().toISOString().slice(0, 10);
+                a.href = url;
+                a.download = (currentLang === 'uk' ? 'Накладна' : 'Invoice') + '_' + today + '.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast(currentLang === 'uk' ? 'Картинку накладної завантажено' : 'Invoice image downloaded', 'success');
+            });
+        };
+
+        window.copyInvoicePng = function() {
+            createInvoiceCanvasBlob().then(({ blob }) => {
+                if (navigator.clipboard && window.ClipboardItem) {
+                    navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ]).then(() => {
+                        showToast(currentLang === 'uk' ? 'Накладну скопійовано! Вставте в будь-який чат (Ctrl+V)' : 'Invoice copied! Paste into any chat (Ctrl+V)', 'success');
+                    }).catch(() => {
+                        window.downloadInvoicePng();
+                    });
+                } else {
+                    window.downloadInvoicePng();
+                }
+            });
+        };
+
+        window.downloadInvoicePdf = function() {
+            const { items: invItems, dateStr, totalQty, grandTotal } = getInvoiceDataForExport();
+            const printWin = window.open('', '_blank', 'width=840,height=900');
+            if (!printWin) {
+                showToast(currentLang === 'uk' ? 'Дозвольте спливаючі вікна для друку' : 'Allow popups to print', 'error');
+                return;
+            }
+
+            const rowsHtml = invItems.map((it, idx) => {
+                const q = it.qty || 1;
+                const price = parseFloat(it.price || 0).toFixed(2);
+                const sum = (parseFloat(it.price || 0) * q).toFixed(2);
+                const dims = (it.len && it.width) ? (it.len + ' × ' + it.width + ' мм') : '-';
+                return '<tr>' +
+                    '<td style="text-align:center;">' + (idx + 1) + '</td>' +
+                    '<td><strong>' + escapeHtml(it.name) + '</strong></td>' +
+                    '<td>' + escapeHtml(it.material || '-') + '</td>' +
+                    '<td>' + dims + '</td>' +
+                    '<td style="text-align:center;">' + q + '</td>' +
+                    '<td style="text-align:right;">' + price + ' ' + t('curr') + '</td>' +
+                    '<td style="text-align:right; font-weight:bold;">' + sum + ' ' + t('curr') + '</td>' +
+                '</tr>';
+            }).join('');
+
+            printWin.document.write(
+                '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+                '<title>' + (currentLang === 'uk' ? 'Накладна' : 'Invoice') + ' - ' + dateStr + '</title>' +
+                '<style>' +
+                    'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 24px; color: #1e293b; }' +
+                    '.header { background: #24272a; color: #ffffff; padding: 20px 24px; border-radius: 6px; margin-bottom: 24px; }' +
+                    '.header h1 { margin: 0 0 6px 0; font-size: 20px; }' +
+                    '.header p { margin: 0; color: #94a3b8; font-size: 13px; }' +
+                    'table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }' +
+                    'th, td { border: 1px solid #cbd5e1; padding: 10px 12px; font-size: 13px; }' +
+                    'th { background: #f8fafc; font-weight: bold; }' +
+                    '.total-card { background: #f8fafc; border: 1px solid #cbd5e1; padding: 16px; border-radius: 6px; display: flex; justify-content: space-between; font-size: 15px; }' +
+                    '@media print { body { padding: 0; } @page { margin: 1.5cm; } }' +
+                '</style></head><body>' +
+                '<div class="header"><h1>' + (currentLang === 'uk' ? 'РОЗРАХУНОК ЗАМОВЛЕННЯ' : 'ORDER CALCULATION') + '</h1><p>' + dateStr + '</p></div>' +
+                '<table><thead><tr>' +
+                    '<th>№</th><th>' + (currentLang === 'uk' ? 'Назва' : 'Name') + '</th><th>' + (currentLang === 'uk' ? 'Матеріал' : 'Material') + '</th><th>' + (currentLang === 'uk' ? 'Розміри' : 'Dimensions') + '</th><th>' + (currentLang === 'uk' ? 'К-сть' : 'Qty') + '</th><th>' + (currentLang === 'uk' ? 'Ціна' : 'Price') + '</th><th>' + (currentLang === 'uk' ? 'Сума' : 'Total') + '</th>' +
+                '</tr></thead><tbody>' +
+                (rowsHtml || '<tr><td colspan="7" style="text-align:center;">' + (currentLang === 'uk' ? 'Немає виробів' : 'No items') + '</td></tr>') +
+                '</tbody></table>' +
+                '<div class="total-card">' +
+                    '<div>' + (currentLang === 'uk' ? 'Разом одиниць товару' : 'Total items') + ': <strong>' + totalQty + ' шт.</strong></div>' +
+                    '<div>' + (currentLang === 'uk' ? 'До сплати' : 'Grand Total') + ': <strong style="font-size:18px;">' + grandTotal.toFixed(2) + ' ' + t('curr') + '</strong></div>' +
+                '</div>' +
+                '<script>window.onload = function() { window.print(); };</' + 'script>' +
+                '</body></html>'
+            );
+            printWin.document.close();
+        };
+
+        window.downloadInvoiceExcel = function() {
+            const { items: invItems, dateStr, totalQty, grandTotal } = getInvoiceDataForExport();
+            let csv = '\uFEFF'; // UTF-8 BOM
+            csv += (currentLang === 'uk' ? 'РОЗРАХУНОК ЗАМОВЛЕННЯ' : 'ORDER CALCULATION') + ';;;\n';
+            csv += (currentLang === 'uk' ? 'Дата' : 'Date') + ': ' + dateStr + ';;;\n\n';
+            csv += '№;' + (currentLang === 'uk' ? 'Назва виробу' : 'Product name') + ';' + (currentLang === 'uk' ? 'Матеріал' : 'Material') + ';' + (currentLang === 'uk' ? 'Розміри' : 'Dimensions') + ';' + (currentLang === 'uk' ? 'К-сть' : 'Qty') + ';' + (currentLang === 'uk' ? 'Ціна за од.' : 'Unit price') + ';' + (currentLang === 'uk' ? 'Сума' : 'Total') + '\n';
+
+            invItems.forEach((it, idx) => {
+                const q = it.qty || 1;
+                const price = parseFloat(it.price || 0).toFixed(2);
+                const sum = (parseFloat(it.price || 0) * q).toFixed(2);
+                const dims = (it.len && it.width) ? (it.len + 'x' + it.width + ' mm') : '-';
+                const name = it.name.replace(/;/g, ' ');
+                const mat = (it.material || '').replace(/;/g, ' ');
+                csv += (idx + 1) + ';' + name + ';' + mat + ';' + dims + ';' + q + ';' + price + ';' + sum + '\n';
+            });
+
+            csv += '\n;;;;' + (currentLang === 'uk' ? 'РАЗОМ' : 'TOTAL') + ':;' + totalQty + ';' + grandTotal.toFixed(2) + ' ' + t('curr') + '\n';
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const today = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = (currentLang === 'uk' ? 'Накладна' : 'Invoice') + '_' + today + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(currentLang === 'uk' ? 'Таблицю Excel успішно завантажено' : 'Excel table downloaded', 'success');
+        };
+
+        window.shareInvoice = function() {
+            createInvoiceCanvasBlob().then(({ blob }) => {
+                const today = new Date().toISOString().slice(0, 10);
+                const file = new File([blob], 'Invoice_' + today + '.png', { type: 'image/png' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    navigator.share({
+                        files: [file],
+                        title: currentLang === 'uk' ? 'Розрахунок замовлення' : 'Order Calculation',
+                        text: (currentLang === 'uk' ? 'Розрахунок замовлення від ' : 'Order calculation from ') + today
+                    }).catch(() => {});
+                } else if (navigator.share) {
+                    const { dateStr, totalQty, grandTotal } = getInvoiceDataForExport();
+                    navigator.share({
+                        title: currentLang === 'uk' ? 'Розрахунок замовлення' : 'Order Calculation',
+                        text: (currentLang === 'uk' ? 'Розрахунок замовлення' : 'Order Calculation') + ' (' + dateStr + '): ' + totalQty + ' шт. на суму ' + grandTotal.toFixed(2) + ' ' + t('curr')
+                    }).catch(() => {});
+                } else {
+                    window.downloadInvoicePng();
+                }
+            });
+        };
+
+        window.emailInvoice = function() {
+            const { items: invItems, dateStr, totalQty, grandTotal } = getInvoiceDataForExport();
+            const subject = encodeURIComponent((currentLang === 'uk' ? 'Розрахунок замовлення' : 'Order Calculation') + ' (' + dateStr + ')');
+            let body = (currentLang === 'uk' ? 'РОЗРАХУНОК ЗАМОВЛЕННЯ' : 'ORDER CALCULATION') + '\n';
+            body += (currentLang === 'uk' ? 'Дата: ' : 'Date: ') + dateStr + '\n\n';
+
+            invItems.forEach((it, idx) => {
+                const q = it.qty || 1;
+                const price = parseFloat(it.price || 0).toFixed(2);
+                const sum = (parseFloat(it.price || 0) * q).toFixed(2);
+                const dims = (it.len && it.width) ? (' (' + it.len + '×' + it.width + ' мм)') : '';
+                body += (idx + 1) + '. ' + it.name + dims + ' — ' + q + ' шт. × ' + price + ' = ' + sum + ' ' + t('curr') + '\n';
+            });
+
+            body += '\n' + (currentLang === 'uk' ? 'Разом товарів: ' : 'Total items: ') + totalQty + ' шт.\n';
+            body += (currentLang === 'uk' ? 'ДО СПЛАТИ: ' : 'TOTAL TO PAY: ') + grandTotal.toFixed(2) + ' ' + t('curr') + '\n';
+
+            window.location.href = 'mailto:?subject=' + subject + '&body=' + encodeURIComponent(body);
+        };
+
+
+        window.askDeleteItem = function(id) {
+            showConfirmModal(() => {
+                items = items.filter(it => it.id !== id);
+                renderItems();
+                saveData();
+            });
+        };
+
+        window.renderCatalogTab = function() {
+            const tbody = document.getElementById('catalog-tab-tbody');
+            if (!tbody) return;
+
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:30px;">${t('no_catalog_items')}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = items.map((item) => {
+                const dimsText = (item.len && item.width) ? `${item.len} × ${item.width} мм` : '-';
+                const isInInv = (item.in_invoice !== false);
+
+                return `
+                    <tr id="catalog-row-${item.id}" data-id="${item.id}">
+                        <td style="text-align:center;">
+                            <span class="wc-drag-handle" title="Перетягнути для зміни порядку">⠿</span>
+                        </td>
+                        <td class="col-photo-cell">
+                            ${item.photo ? `<img src="${escapeHtml(item.photo)}" style="width:36px; height:36px; object-fit:cover; border-radius:4px;">` : `<span style="color:#cbd5e1; font-size:16px;">🖼️</span>`}
+                        </td>
+                        <td>
+                            <strong>${escapeHtml(item.name)}</strong>
+                        </td>
+                        <td>${escapeHtml(item.material || '-')}</td>
+                        <td>${dimsText}</td>
+                        <td style="text-align:right; font-weight:600;">${parseFloat(item.price || 0).toFixed(2)} ${t('curr')}</td>
+                        <td style="text-align:center;">
+                            <div style="display:inline-flex; gap:6px; align-items:center;">
+                                ${isInInv ? `
+                                    <button type="button" class="btn btn-outline btn-sm" style="color:var(--tc-green); border-color:var(--tc-green);" onclick="removeFromInvoice('${item.id}')" title="${t('btn_remove_from_inv')}">
+                                        ✓ ${t('in_invoice_badge')}
+                                    </button>
+                                ` : `
+                                    <button type="button" class="btn btn-green btn-sm" onclick="addToInvoice('${item.id}')">
+                                        ${t('btn_add_to_inv')}
+                                    </button>
+                                `}
+                                <button type="button" class="btn btn-outline btn-sm" onclick="duplicateItem('${item.id}')" title="Дублювати">📋</button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="Редагувати">✏️</button>
+                                <button type="button" class="btn-delete-transp" onclick="askDeleteItem('${item.id}')" title="Видалити">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            setupUnifiedTableDnD('catalog-tab-tbody', (srcId, targetId, isBelow) => {
+                const srcIdx = items.findIndex(it => String(it.id) === String(srcId));
+                const targetIdx = items.findIndex(it => String(it.id) === String(targetId));
+                if (srcIdx !== -1 && targetIdx !== -1) {
+                    const [moved] = items.splice(srcIdx, 1);
+                    let insertAt = items.findIndex(it => String(it.id) === String(targetId));
+                    if (isBelow) insertAt += 1;
+                    items.splice(insertAt, 0, moved);
+                    renderCatalogTab();
+                    renderItems();
+                    saveData();
+                }
+            });
+        };
+
+        function renderItems() {
+            const tbody = document.getElementById('items-tbody');
+            if (!tbody) return;
+
+            const hideUnselected = document.getElementById('filter-selected')?.checked || false;
+            // Invoice items: only items where in_invoice is true (default true)
+            let invoiceItems = items.filter(it => it.in_invoice !== false);
+            let displayItems = invoiceItems;
+            if (hideUnselected) {
+                displayItems = invoiceItems.filter(it => it.selected);
+            }
+
+            if (displayItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:24px;">${invoiceItems.length === 0 ? t('no_invoice_items') : t('no_items')}</td></tr>`;
+                updateCalculations();
+                return;
+            }
+
+            tbody.innerHTML = displayItems.map((item) => {
+                const isSelected = item.selected !== false;
+                const qty = item.qty || 1;
+                const sum = (item.price * qty).toFixed(2);
+                const dimsText = (item.len && item.width) ? `${item.len} × ${item.width} мм` : '-';
+
+                return `
+                    <tr id="row-${item.id}" data-id="${item.id}">
+                        <td class="no-invoice" style="text-align:center;">
+                            <span class="wc-drag-handle" title="Перетягнути для зміни порядку">⠿</span>
+                        </td>
+                        <td>
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="setItemSelected('${item.id}', this.checked)">
+                        </td>
+                        <td class="col-photo-cell">
+                            ${item.photo ? `<img src="${escapeHtml(item.photo)}" style="width:36px; height:36px; object-fit:cover; border-radius:4px;">` : `<span style="color:#cbd5e1; font-size:16px;">🖼️</span>`}
+                        </td>
+                        <td>
+                            <strong>${escapeHtml(item.name)}</strong>
+                        </td>
+                        <td class="col-mat-cell">${escapeHtml(item.material || '-')}</td>
+                        <td class="col-dims-cell">${dimsText}</td>
+                        <td class="col-price-cell">${parseFloat(item.price).toFixed(2)} ${t('curr')}</td>
+                        <td class="col-qty-cell">
+                            <input type="number" min="1" value="${qty}" style="width:65px; padding:4px 6px;" onchange="setItemQty('${item.id}', this.value)">
+                        </td>
+                        <td class="col-sum-cell" style="text-align:right; font-weight:700;">
+                            ${sum} ${t('curr')}
+                        </td>
+                        <td class="no-invoice" style="text-align:right; white-space:nowrap;">
+                            <button type="button" class="btn btn-outline btn-sm" onclick="duplicateItem('${item.id}')" title="Дублювати">📋</button>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="Редагувати">✏️</button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="askDeleteItem('${item.id}')" title="Видалити">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            applyColumnVisibility();
+            setupUnifiedTableDnD('items-tbody', (srcId, targetId, isBelow) => {
+                const srcIdx = items.findIndex(it => String(it.id) === String(srcId));
+                const targetIdx = items.findIndex(it => String(it.id) === String(targetId));
+                if (srcIdx !== -1 && targetIdx !== -1) {
+                    const [moved] = items.splice(srcIdx, 1);
+                    let insertAt = items.findIndex(it => String(it.id) === String(targetId));
+                    if (isBelow) insertAt += 1;
+                    items.splice(insertAt, 0, moved);
+                    renderItems();
+                    renderCatalogTab();
+                    saveData();
+                }
+            });
             updateCalculations();
         }
 
