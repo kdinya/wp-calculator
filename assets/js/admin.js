@@ -46,6 +46,11 @@
                 lbl_calc_height: "Висота (мм, опц.)",
                 res_volume: "Розрахований об'єм:",
                 cu_cm: "см³",
+                lbl_mat_unit: "Одиниця виміру розрахунку",
+                opt_unit_cm2: "Квадратні сантиметри (см²)",
+                opt_unit_cm3: "Кубічні сантиметри (см³)",
+                rate_per_unit: "Тариф",
+                no_materials_unit: "Немає матеріалів для обраного типу розрахунку",
                 sec1_title: "1. Швидкий калькулятор вартості",
                 lbl_calc_mat: "Матеріал (тариф за 1 см²)",
                 lbl_calc_len: "Довжина (мм)",
@@ -165,6 +170,11 @@
                 lbl_calc_height: "Height (mm, opt.)",
                 res_volume: "Calculated volume:",
                 cu_cm: "cm³",
+                lbl_mat_unit: "Calculation unit",
+                opt_unit_cm2: "Square centimeters (cm²)",
+                opt_unit_cm3: "Cubic centimeters (cm³)",
+                rate_per_unit: "Rate",
+                no_materials_unit: "No materials for selected calculation type",
                 sec1_title: "1. Quick Cost Calculator",
                 lbl_calc_mat: "Material (rate per 1 cm²)",
                 lbl_calc_len: "Length (mm)",
@@ -385,6 +395,61 @@
         }
 
         
+        function formatItemDims(item) {
+            if (!item || !item.len || !item.width) return '-';
+            if (item.height && parseFloat(item.height) > 0) {
+                return item.len + ' × ' + item.width + ' × ' + item.height + ' мм';
+            }
+            return item.len + ' × ' + item.width + ' мм';
+        }
+
+        function getMaterialUnitForHeight(h) {
+            const heightVal = parseFloat(h);
+            return (heightVal && heightVal > 0) ? 'cm3' : 'cm2';
+        }
+
+        function getMaterialsForUnit(unit) {
+            return materials.filter(m => (m.unit || 'cm2') === unit);
+        }
+
+        function populateMaterialSelect(selectEl, heightVal, preferredIdOrName) {
+            if (!selectEl) return;
+            const unit = getMaterialUnitForHeight(heightVal);
+            const filtered = getMaterialsForUnit(unit);
+            if (filtered.length === 0) {
+                selectEl.innerHTML = '<option value="0" data-name="" data-unit="' + unit + '">' + t('no_materials_unit') + '</option>';
+                return;
+            }
+            const unitLabel = unit === 'cm3' ? t('cu_cm') : t('sq_cm');
+            selectEl.innerHTML = filtered.map(m => {
+                const optName = escapeHtml(m.name);
+                const optId = escapeHtml(m.id || '');
+                return '<option value="' + m.price + '" data-id="' + optId + '" data-name="' + optName + '" data-rate="' + m.price + '" data-unit="' + (m.unit || 'cm2') + '">' + optName + ' (' + parseFloat(m.price) + ' ' + t('curr') + '/' + unitLabel + ')</option>';
+            }).join('');
+
+            if (preferredIdOrName) {
+                for (let i = 0; i < selectEl.options.length; i++) {
+                    const opt = selectEl.options[i];
+                    if (opt.getAttribute('data-id') === preferredIdOrName || opt.getAttribute('data-name') === preferredIdOrName || opt.value == preferredIdOrName) {
+                        selectEl.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        window.populateMaterialSelect = populateMaterialSelect;
+        window.updateAddFormMaterials = function(h) {
+            const addMat = document.getElementById('add-mat');
+            const selName = (addMat && addMat.selectedIndex >= 0 && addMat.options[addMat.selectedIndex]) ? addMat.options[addMat.selectedIndex].getAttribute('data-name') : '';
+            populateMaterialSelect(addMat, h, selName);
+        };
+        window.updateEditFormMaterials = function(h) {
+            const editMat = document.getElementById('edit-prod-mat');
+            const selName = (editMat && editMat.selectedIndex >= 0 && editMat.options[editMat.selectedIndex]) ? editMat.options[editMat.selectedIndex].getAttribute('data-name') : '';
+            populateMaterialSelect(editMat, h, selName);
+        };
+
         window.setWcCurrency = function(val) {
             appCurrency = (typeof val === 'string' && val.trim() !== '') ? val.trim() : (currentLang === 'uk' ? 'грн' : 'UAH');
             applyLanguageToDom();
@@ -577,6 +642,10 @@
                 applyAccentColor();
                 applyLanguageToDom();
                 applyColumnVisibility();
+                renderMaterials();
+                renderItems();
+                renderCatalogTab();
+                runQuickCalc();
                 if (statusEl) statusEl.textContent = t('saved');
                 return;
             }
@@ -627,11 +696,19 @@
                         }
                         applyAccentColor();
                         isDataInitialized = true;
+                        renderMaterials();
+                        renderItems();
+                        renderCatalogTab();
+                        runQuickCalc();
                         if (statusEl) statusEl.textContent = t('saved');
                     } else {
                         fallbackToLocalStorage();
                     }
                     applyLanguageToDom();
+                    renderMaterials();
+                    renderItems();
+                    renderCatalogTab();
+                    runQuickCalc();
                 })
                 .catch(() => {
                     fallbackToLocalStorage();
@@ -697,6 +774,7 @@
                     lang: currentLang,
                     accent_color: accentColor,
                     wipe_on_uninstall: wipeOnUninstall,
+                    currency: appCurrency,
                     column_visibility: columnVisibility
                 }
             };
@@ -774,8 +852,11 @@
             const rate = parseFloat(matSel ? matSel.value : 0) || 0;
 
             const isVolume = (height > 0);
+            const selectedMatName = (matSel && matSel.selectedIndex >= 0 && matSel.options[matSel.selectedIndex]) ? matSel.options[matSel.selectedIndex].getAttribute('data-name') : '';
+            populateMaterialSelect(matSel, height, selectedMatName);
+            const activeRate = parseFloat(matSel && matSel.selectedIndex >= 0 ? matSel.options[matSel.selectedIndex].value : 0) || 0;
             const dimQty = isVolume ? ((len * width * height) / 1000) : ((len * width) / 100);
-            const price = dimQty * rate;
+            const price = dimQty * activeRate;
 
             const areaLabel = document.getElementById('calc-area-label');
             const resArea = document.getElementById('res-area');
@@ -814,13 +895,8 @@
             if (addHeight) addHeight.value = heightVal;
             if (addPrice) addPrice.value = price.toFixed(2);
 
-            if (addMat && matName) {
-                for (let i = 0; i < addMat.options.length; i++) {
-                    if (addMat.options[i].getAttribute('data-name') === matName) {
-                        addMat.selectedIndex = i;
-                        break;
-                    }
-                }
+            if (addMat) {
+                populateMaterialSelect(addMat, heightVal, matName);
             }
         };
 
@@ -864,7 +940,7 @@
                     tbody.innerHTML = materials.map((m, idx) => `
                         <tr>
                             <td><strong>${escapeHtml(m.name)}</strong></td>
-                            <td>${parseFloat(m.price)}</td>
+                            <td>${parseFloat(m.price)} ${t('curr')}/${(m.unit === 'cm3' ? t('cu_cm') : t('sq_cm'))}</td>
                             <td style="text-align:right; white-space:nowrap;">
                                 <div style="display:inline-flex; align-items:center; justify-content:flex-end; gap:6px;">
                                     <button type="button" class="btn btn-outline btn-sm" onclick="openEditMaterialModal(${idx})" title="${t('modal_edit_mat_title')}">✏️</button>
@@ -876,13 +952,14 @@
                 }
             }
 
-            const optionsHtml = materials.length === 0 
-                ? `<option value="0">${t('no_materials')}</option>`
-                : materials.map(m => `<option value="${m.price}" data-name="${escapeHtml(m.name)}">${escapeHtml(m.name)} (${parseFloat(m.price)} ${t('curr')}/${t('sq_cm')})</option>`).join('');
+            const calcHeight = document.getElementById('calc-height');
+            populateMaterialSelect(calcMat, calcHeight ? calcHeight.value : 0, calcMat && calcMat.selectedIndex >= 0 && calcMat.options[calcMat.selectedIndex] ? calcMat.options[calcMat.selectedIndex].getAttribute('data-name') : '');
 
-            if (calcMat) calcMat.innerHTML = optionsHtml;
-            if (addMat) addMat.innerHTML = optionsHtml;
-            if (editProdMat) editProdMat.innerHTML = optionsHtml;
+            const addHeight = document.getElementById('add-height');
+            populateMaterialSelect(addMat, addHeight ? addHeight.value : 0, addMat && addMat.selectedIndex >= 0 && addMat.options[addMat.selectedIndex] ? addMat.options[addMat.selectedIndex].getAttribute('data-name') : '');
+
+            const editHeight = document.getElementById('edit-prod-height');
+            populateMaterialSelect(editProdMat, editHeight ? editHeight.value : 0, editProdMat && editProdMat.selectedIndex >= 0 && editProdMat.options[editProdMat.selectedIndex] ? editProdMat.options[editProdMat.selectedIndex].getAttribute('data-name') : '');
 
             runQuickCalc();
         }
@@ -898,10 +975,14 @@
                 return;
             }
 
+            const unitEl = document.getElementById('mat-unit');
+            const matUnit = (unitEl && unitEl.value === 'cm3') ? 'cm3' : 'cm2';
+
             materials.push({
                 id: 'm_' + Date.now(),
                 name: name,
-                price: price
+                price: price,
+                unit: matUnit
             });
 
             relinkItemsToMaterials();
@@ -919,6 +1000,8 @@
             document.getElementById('edit-mat-id').value = idx;
             document.getElementById('edit-mat-name').value = m.name;
             document.getElementById('edit-mat-price').value = m.price;
+            const editUnitEl = document.getElementById('edit-mat-unit');
+            if (editUnitEl) editUnitEl.value = (m.unit === 'cm3') ? 'cm3' : 'cm2';
             document.getElementById('modal-edit-material').style.display = 'flex';
         };
 
@@ -937,8 +1020,11 @@
             }
 
             if (materials[idx]) {
+                const editUnitEl = document.getElementById('edit-mat-unit');
+                const matUnit = (editUnitEl && editUnitEl.value === 'cm3') ? 'cm3' : 'cm2';
                 materials[idx].name = name;
                 materials[idx].price = price;
+                materials[idx].unit = matUnit;
             }
 
             closeEditMaterialModal();
@@ -1037,14 +1123,7 @@
             document.getElementById('edit-prod-price').value = item.price || '';
 
             const editMatSel = document.getElementById('edit-prod-mat');
-            if (editMatSel) {
-                for (let i = 0; i < editMatSel.options.length; i++) {
-                    if (editMatSel.options[i].getAttribute('data-name') === item.material) {
-                        editMatSel.selectedIndex = i;
-                        break;
-                    }
-                }
-            }
+            populateMaterialSelect(editMatSel, item.height, item.material_id || item.material);
 
             document.getElementById('modal-edit-product').style.display = 'flex';
         };
@@ -2085,9 +2164,7 @@
             const invCheckbox = document.getElementById('cat-add-to-inv');
 
             if (nameInput) nameInput.value = '';
-            if (matSelect) {
-                matSelect.innerHTML = materials.map(m => '<option value="' + escapeHtml(m.id) + '" data-name="' + escapeHtml(m.name) + '" data-rate="' + m.price + '">' + escapeHtml(m.name) + ' (' + m.price + ' ' + t('curr') + '/см²)</option>').join('');
-            }
+            populateMaterialSelect(matSelect, heightInput ? heightInput.value : 0);
             if (lenInput) lenInput.value = '1000';
             if (widthInput) widthInput.value = '500';
             const heightInput = document.getElementById('cat-add-height');
@@ -2111,6 +2188,9 @@
             const heightInput = document.getElementById('cat-add-height');
             const priceInput = document.getElementById('cat-add-price');
             if (!matSelect || !lenInput || !widthInput || !priceInput) return;
+
+            const selectedMatName = (matSelect.selectedIndex >= 0 && matSelect.options[matSelect.selectedIndex]) ? matSelect.options[matSelect.selectedIndex].getAttribute('data-name') : '';
+            populateMaterialSelect(matSelect, heightInput ? heightInput.value : 0, selectedMatName);
 
             const opt = matSelect.selectedOptions ? matSelect.selectedOptions[0] : null;
             const rate = opt ? (parseFloat(opt.dataset.rate) || 0) : 0;

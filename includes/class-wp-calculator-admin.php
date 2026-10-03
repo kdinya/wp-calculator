@@ -38,7 +38,12 @@ class WpCalculatorAdmin {
                 'res_volume' => 'Розрахований об\'єм:',
                 'cu_cm' => 'см³',
                 'sec1_title' => '1. Швидкий калькулятор вартості',
-                'lbl_calc_mat' => 'Матеріал (тариф за 1 см²)',
+                'lbl_mat_unit' => 'Одиниця виміру розрахунку',
+                'opt_unit_cm2' => 'Квадратні сантиметри (см²)',
+                'opt_unit_cm3' => 'Кубічні сантиметри (см³)',
+                'rate_per_unit' => 'Тариф',
+                'no_materials_unit' => 'Немає матеріалів для обраного типу розрахунку',
+                'lbl_calc_mat' => 'Матеріал',
                 'lbl_calc_len' => 'Довжина (мм)',
                 'lbl_calc_width' => 'Ширина (мм)',
                 'btn_send_to_form' => 'Внести у виріб ↓',
@@ -143,7 +148,12 @@ class WpCalculatorAdmin {
                 'res_volume' => 'Calculated volume:',
                 'cu_cm' => 'cm³',
                 'sec1_title' => '1. Quick Cost Calculator',
-                'lbl_calc_mat' => 'Material (rate per 1 cm²)',
+                'lbl_mat_unit' => 'Calculation unit',
+                'opt_unit_cm2' => 'Square centimeters (cm²)',
+                'opt_unit_cm3' => 'Cubic centimeters (cm³)',
+                'rate_per_unit' => 'Rate',
+                'no_materials_unit' => 'No materials for selected calculation type',
+                'lbl_calc_mat' => 'Material',
                 'lbl_calc_len' => 'Length (mm)',
                 'lbl_calc_width' => 'Width (mm)',
                 'btn_send_to_form' => 'Add to Product Form ↓',
@@ -404,7 +414,7 @@ class WpCalculatorAdmin {
                                     </div>
                                     <div>
                                         <label data-i18n="lbl_calc_height"><?php echo esc_html($t['lbl_calc_height']); ?></label>
-                                        <input type="number" id="add-height" placeholder="мм (опц.)">
+                                        <input type="number" id="add-height" placeholder="мм (опц.)" oninput="updateAddFormMaterials(this.value)">
                                     </div>
                                     <div>
                                         <label data-i18n="lbl_add_price"><?php echo esc_html($t['lbl_add_price']); ?></label>
@@ -546,6 +556,13 @@ class WpCalculatorAdmin {
                                         <label data-i18n="lbl_mat_rate"><?php echo esc_html($t['lbl_mat_rate']); ?></label>
                                         <input type="number" step="0.00001" id="mat-price" placeholder="0.20123">
                                     </div>
+                                    <div>
+                                        <label data-i18n="lbl_mat_unit"><?php echo esc_html($t['lbl_mat_unit']); ?></label>
+                                        <select id="mat-unit" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-weight:600;">
+                                            <option value="cm2" selected data-i18n="opt_unit_cm2"><?php echo esc_html($t['opt_unit_cm2']); ?></option>
+                                            <option value="cm3" data-i18n="opt_unit_cm3"><?php echo esc_html($t['opt_unit_cm3']); ?></option>
+                                        </select>
+                                    </div>
                                     <button type="button" class="btn btn-dark" onclick="addNewMaterial()" data-i18n="btn_mat_add"><?php echo esc_html($t['btn_mat_add']); ?></button>
                                 </div>
 
@@ -554,7 +571,7 @@ class WpCalculatorAdmin {
                                         <thead>
                                             <tr>
                                                 <th data-i18n="col_material"><?php echo esc_html($t['col_material']); ?></th>
-                                                <th>грн/см²</th>
+                                                <th data-i18n="rate_per_unit"><?php echo esc_html($t['rate_per_unit']); ?></th>
                                                 <th style="width:70px; text-align:right;"></th>
                                             </tr>
                                         </thead>
@@ -734,7 +751,7 @@ class WpCalculatorAdmin {
                                 </div>
                                 <div>
                                     <label data-i18n="lbl_calc_height"><?php echo esc_html($t['lbl_calc_height']); ?></label>
-                                    <input type="number" id="edit-prod-height" placeholder="—">
+                                    <input type="number" id="edit-prod-height" placeholder="—" oninput="updateEditFormMaterials(this.value)">
                                 </div>
                             </div>
                             <div>
@@ -762,6 +779,13 @@ class WpCalculatorAdmin {
                             <div>
                                 <label data-i18n="lbl_mat_rate"><?php echo esc_html($t['lbl_mat_rate']); ?></label>
                                 <input type="number" step="0.00001" id="edit-mat-price">
+                            </div>
+                            <div>
+                                <label data-i18n="lbl_mat_unit"><?php echo esc_html($t['lbl_mat_unit']); ?></label>
+                                <select id="edit-mat-unit" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-weight:600;">
+                                    <option value="cm2" data-i18n="opt_unit_cm2"><?php echo esc_html($t['opt_unit_cm2']); ?></option>
+                                    <option value="cm3" data-i18n="opt_unit_cm3"><?php echo esc_html($t['opt_unit_cm3']); ?></option>
+                                </select>
                             </div>
                             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
                                 <button type="button" class="btn btn-outline" onclick="closeEditMaterialModal()" data-i18n="btn_cancel"><?php echo esc_html($t['btn_cancel']); ?></button>

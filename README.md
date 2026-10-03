@@ -11,7 +11,9 @@ A high-performance, universal calculation, estimation, and invoicing plugin for 
 ### 🌟 Key Features
 
 1. **Universal Dimensional Cost Calculator:**
-   - Calculates part and product costs based on dimensions in millimeters (Length × Width).
+   - Calculates part and product costs based on dimensions in millimeters (Length × Width, optional Height).
+   - Automatic calculation in square centimeters ($	ext{cm}^2$) or cubic centimeters ($	ext{cm}^3$).
+   - Dynamic material filtering matching the selected unit type.
    - Real-time area computation in square centimeters ($\text{cm}^2$).
    - High-precision pricing per $1\text{ cm}^2$ with arbitrary decimal precision (e.g. `0.20123`).
    - One-click transfer of calculated dimensions and pricing into the active product form.

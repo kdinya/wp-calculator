@@ -131,10 +131,13 @@ function wood_calc_normalize_material($material, $fallback_id = '') {
         $price = (float) $material['rate'];
     }
 
+    $unit = (isset($material['unit']) && $material['unit'] === 'cm3') ? 'cm3' : 'cm2';
+
     return array(
         'id' => isset($material['id']) && $material['id'] !== '' ? sanitize_text_field((string) $material['id']) : $fallback_id,
         'name' => $name,
         'price' => $price,
+        'unit' => $unit,
     );
 }
 }
