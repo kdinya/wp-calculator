@@ -764,15 +764,9 @@ class WpCalculatorAdmin {
                                     <input type="number" step="any" id="cat-add-width" value="500" oninput="recalcCatalogModalPrice()">
                                 </div>
                             </div>
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                                <div>
-                                    <label data-i18n="col_qty"><?php echo esc_html($t['col_qty']); ?></label>
-                                    <input type="number" min="1" id="cat-add-qty" value="1">
-                                </div>
-                                <div>
-                                    <label data-i18n="lbl_add_price"><?php echo esc_html($t['lbl_add_price']); ?></label>
-                                    <input type="number" step="any" id="cat-add-price">
-                                </div>
+                            <div>
+                                <label data-i18n="lbl_add_price"><?php echo esc_html($t['lbl_add_price']); ?></label>
+                                <input type="number" step="any" id="cat-add-price">
                             </div>
                             <div style="margin-top:4px;">
                                 <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:500;">

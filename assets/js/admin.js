@@ -2012,7 +2012,6 @@
             const matSelect = document.getElementById('cat-add-mat');
             const lenInput = document.getElementById('cat-add-len');
             const widthInput = document.getElementById('cat-add-width');
-            const qtyInput = document.getElementById('cat-add-qty');
             const priceInput = document.getElementById('cat-add-price');
             const invCheckbox = document.getElementById('cat-add-to-inv');
 
@@ -2022,7 +2021,6 @@
             }
             if (lenInput) lenInput.value = '1000';
             if (widthInput) widthInput.value = '500';
-            if (qtyInput) qtyInput.value = '1';
             if (invCheckbox) invCheckbox.checked = false;
 
             recalcCatalogModalPrice();
@@ -2056,7 +2054,6 @@
             const matSelect = document.getElementById('cat-add-mat');
             const lenInput = document.getElementById('cat-add-len');
             const widthInput = document.getElementById('cat-add-width');
-            const qtyInput = document.getElementById('cat-add-qty');
             const priceInput = document.getElementById('cat-add-price');
             const invCheckbox = document.getElementById('cat-add-to-inv');
 
@@ -2074,7 +2071,6 @@
                 return;
             }
 
-            const qty = parseInt(qtyInput ? qtyInput.value : 1, 10) || 1;
             const price = parseFloat(priceInput ? priceInput.value : 0);
             if (isNaN(price) || price < 0) {
                 showToast(t('err_invalid_price'), 'error');
@@ -2095,7 +2091,7 @@
                 width: width,
                 area_cm2: (len * width) / 100,
                 price: price,
-                qty: qty,
+                qty: 1,
                 in_invoice: addToInvoice,
                 selected: addToInvoice
             };
