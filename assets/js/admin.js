@@ -129,6 +129,7 @@
                 modal_del_title: "Підтвердження видалення",
                 modal_del_text: "Ви дійсно бажаєте видалити цей елемент? Цю дію неможливо буде скасувати.",
                 btn_cancel: "Скасувати",
+                btn_close: "Закрити",
                 btn_save: "Зберегти зміни",
                 btn_delete: "Видалити",
             modal_add_catalog_title: "Додати новий виріб у каталог",
@@ -243,6 +244,7 @@
                 modal_del_title: "Confirm Deletion",
                 modal_del_text: "Are you sure you want to delete this item? This action cannot be undone.",
                 btn_cancel: "Cancel",
+                btn_close: "Close",
                 btn_save: "Save Changes",
                 btn_delete: "Delete",
             modal_add_catalog_title: "Add New Product to Catalog",
@@ -308,7 +310,7 @@
         }
 
         const COLOR_PRESETS = [
-            { name: 'tomchik', labelUk: 'Фірмовий tomchik', labelEn: 'Tomchik brand', color: '#95b504' },
+            { name: 'green', labelUk: 'Зелений', labelEn: 'Green', color: '#95b504' },
             { name: 'graphite', labelUk: 'Темний графіт', labelEn: 'Dark graphite', color: '#24272a' },
             { name: 'red', labelUk: 'Червоний', labelEn: 'Red', color: '#dc2626' },
             { name: 'blue', labelUk: 'Класичний синій', labelEn: 'Classic blue', color: '#2563eb' },
@@ -798,7 +800,10 @@
             const addMat = document.getElementById('add-mat');
             const editProdMat = document.getElementById('edit-prod-mat');
 
-            relinkItemsToMaterials();
+            const relinked = relinkItemsToMaterials();
+            if (relinked && isDataInitialized) {
+                saveData(true);
+            }
 
             if (tbody) {
                 if (materials.length === 0) {

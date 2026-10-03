@@ -13,12 +13,14 @@ function wood_calc_get_stored_data() {
         return $cached_data;
     }
 
+    // Read legacy records first and the canonical record last so current settings
+    // and data always take precedence over historical backups.
     $storage_keys = array(
-        'wood_calc_store_v3',
         'wood_calc_store_v4',
         'wood_calc_store_backup',
         'wood_calc_store_v2',
         'wood_calc_store',
+        'wood_calc_store_v3',
     );
 
     $merged_materials = array();

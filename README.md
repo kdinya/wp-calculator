@@ -46,7 +46,7 @@ A high-performance, universal calculation, estimation, and invoicing plugin for 
 
 6. **Appearance & Custom Branding:**
    - Dedicated **Appearance** tab with live accent color picker.
-   - Pre-configured color presets (tomchik green `#95b504`, dark graphite `#24272a`, red `#dc2626`, blue `#2563eb`, purple `#7c3aed`, orange `#ea580c`) plus any hex color.
+   - Pre-configured color presets (green `#95b504`, dark graphite `#24272a`, red `#dc2626`, blue `#2563eb`, purple `#7c3aed`, orange `#ea580c`) plus any hex color.
    - Instant real-time UI updates without page reloads. Custom-styled checkboxes and radio buttons matching the chosen accent color.
 
 7. **Bilingual Support (English & Ukrainian):**
@@ -126,7 +126,7 @@ A high-performance, universal calculation, estimation, and invoicing plugin for 
 
 6. **Оформлення та фірмовий стиль:**
    - Вкладка **«Оформлення»** із палітрою акцентного кольору та Color Picker.
-   - Готові пресети кольорів (фірмовий зелений tomchik `#95b504`, темний графіт `#24272a`, червоний `#dc2626`, синій `#2563eb`, індиго `#7c3aed`, бурштиновий `#ea580c`).
+   - Готові пресети кольорів (зелений `#95b504`, темний графіт `#24272a`, червоний `#dc2626`, синій `#2563eb`, індиго `#7c3aed`, бурштиновий `#ea580c`).
    - Миттєве застосування без перезавантаження. Стилізовані чекбокси та радіокнопки в акцентному кольорі.
 
 7. **Двомовність (Українська та English):**

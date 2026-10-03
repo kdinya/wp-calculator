@@ -110,6 +110,7 @@ class WpCalculatorAdmin {
                 'modal_del_title' => 'Підтвердження видалення',
                 'modal_del_text' => 'Ви дійсно бажаєте видалити цей елемент? Цю дію неможливо буде скасувати.',
                 'btn_cancel' => 'Скасувати',
+                'btn_close' => 'Закрити',
                 'btn_save' => 'Зберегти зміни',
                 'modal_add_catalog_title' => 'Додати новий виріб у каталог',
                 'btn_create_in_catalog' => 'Зберегти в каталог',
@@ -210,6 +211,7 @@ class WpCalculatorAdmin {
                 'modal_del_title' => 'Confirm Deletion',
                 'modal_del_text' => 'Are you sure you want to delete this item? This action cannot be undone.',
                 'btn_cancel' => 'Cancel',
+                'btn_close' => 'Close',
                 'btn_save' => 'Save Changes',
                 'modal_add_catalog_title' => 'Add New Product to Catalog',
                 'btn_create_in_catalog' => 'Save to Catalog',
@@ -549,7 +551,7 @@ class WpCalculatorAdmin {
                                         <th data-i18n="col_material"><?php echo esc_html($t['col_material']); ?></th>
                                         <th data-i18n="col_dims"><?php echo esc_html($t['col_dims']); ?></th>
                                         <th data-i18n="col_price_pc"><?php echo esc_html($t['col_price_pc']); ?></th>
-                                        <th style="width:160px; text-align:center;" data-i18n="col_status"><?php echo esc_html(['col_status']); ?></th>
+                                        <th style="width:160px; text-align:center;" data-i18n="col_status"><?php echo esc_html($t['col_status']); ?></th>
                                         <th style="width:130px; text-align:right;" data-i18n="col_actions"><?php echo esc_html($t['col_actions']); ?></th>
                                     </tr>
                                 </thead>
@@ -742,45 +744,45 @@ class WpCalculatorAdmin {
                 <!-- МОДАЛЬНЕ ВІКНО: СТВОРЕННЯ ВИРОБУ В КАТАЛОЗІ -->
                 <div id="modal-add-catalog-item" class="modal-backdrop" style="display:none;" onclick="if(event.target===this)closeAddCatalogItemModal();">
                     <div class="modal-content" style="max-width:520px;">
-                        <h3 style="margin-top:0; font-size:18px; color:var(--tc-dark);" data-i18n="modal_add_catalog_title"><?php echo esc_html(['modal_add_catalog_title']); ?></h3>
+                        <h3 style="margin-top:0; font-size:18px; color:var(--tc-dark);" data-i18n="modal_add_catalog_title"><?php echo esc_html($t['modal_add_catalog_title']); ?></h3>
                         <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
                             <div>
-                                <label data-i18n="lbl_add_name"><?php echo esc_html(['lbl_add_name']); ?></label>
+                                <label data-i18n="lbl_add_name"><?php echo esc_html($t['lbl_add_name']); ?></label>
                                 <input type="text" id="cat-add-name" placeholder="Наприклад: Стільниця дубова">
                             </div>
                             <div>
-                                <label data-i18n="lbl_add_mat"><?php echo esc_html(['lbl_add_mat']); ?></label>
+                                <label data-i18n="lbl_add_mat"><?php echo esc_html($t['lbl_add_mat']); ?></label>
                                 <select id="cat-add-mat" onchange="recalcCatalogModalPrice()"></select>
                             </div>
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                                 <div>
-                                    <label data-i18n="lbl_calc_len"><?php echo esc_html(['lbl_calc_len']); ?></label>
+                                    <label data-i18n="lbl_calc_len"><?php echo esc_html($t['lbl_calc_len']); ?></label>
                                     <input type="number" step="any" id="cat-add-len" value="1000" oninput="recalcCatalogModalPrice()">
                                 </div>
                                 <div>
-                                    <label data-i18n="lbl_calc_width"><?php echo esc_html(['lbl_calc_width']); ?></label>
+                                    <label data-i18n="lbl_calc_width"><?php echo esc_html($t['lbl_calc_width']); ?></label>
                                     <input type="number" step="any" id="cat-add-width" value="500" oninput="recalcCatalogModalPrice()">
                                 </div>
                             </div>
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                                 <div>
-                                    <label data-i18n="col_qty"><?php echo esc_html(['col_qty']); ?></label>
+                                    <label data-i18n="col_qty"><?php echo esc_html($t['col_qty']); ?></label>
                                     <input type="number" min="1" id="cat-add-qty" value="1">
                                 </div>
                                 <div>
-                                    <label data-i18n="lbl_add_price"><?php echo esc_html(['lbl_add_price']); ?></label>
+                                    <label data-i18n="lbl_add_price"><?php echo esc_html($t['lbl_add_price']); ?></label>
                                     <input type="number" step="any" id="cat-add-price">
                                 </div>
                             </div>
                             <div style="margin-top:4px;">
                                 <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:500;">
                                     <input type="checkbox" id="cat-add-to-inv">
-                                    <span data-i18n="chk_modal_add_to_inv"><?php echo esc_html(['chk_modal_add_to_inv']); ?></span>
+                                    <span data-i18n="chk_modal_add_to_inv"><?php echo esc_html($t['chk_modal_add_to_inv']); ?></span>
                                 </label>
                             </div>
                             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
-                                <button type="button" class="btn btn-outline" onclick="closeAddCatalogItemModal()" data-i18n="btn_cancel"><?php echo esc_html(['btn_cancel']); ?></button>
-                                <button type="button" class="btn btn-green" onclick="saveCatalogItemFromModal()" data-i18n="btn_create_in_catalog"><?php echo esc_html(['btn_create_in_catalog']); ?></button>
+                                <button type="button" class="btn btn-outline" onclick="closeAddCatalogItemModal()" data-i18n="btn_close"><?php echo esc_html($t['btn_close']); ?></button>
+                                <button type="button" class="btn btn-green" onclick="saveCatalogItemFromModal()" data-i18n="btn_create_in_catalog"><?php echo esc_html($t['btn_create_in_catalog']); ?></button>
                             </div>
                         </div>
                     </div>
@@ -793,7 +795,7 @@ class WpCalculatorAdmin {
                             <!-- Список для вибору -->
                         </div>
                         <div class="modal-actions">
-                            <button type="button" class="btn btn-outline" onclick="closeAddFromCatalogModal()" data-i18n="btn_cancel"><?php echo esc_html($t['btn_cancel']); ?></button>
+                            <button type="button" class="btn btn-outline" onclick="closeAddFromCatalogModal()" data-i18n="btn_close"><?php echo esc_html($t['btn_close']); ?></button>
                         </div>
                     </div>
                 </div>
