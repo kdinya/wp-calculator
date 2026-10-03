@@ -58,8 +58,7 @@
                 btn_select_all: "Виділити всі",
                 btn_deselect_all: "Зняти всі",
                 inv_cols_title: "Колонки для накладної:",
-                col_photo: "Фото",
-                col_material: "Матеріал",
+                                col_material: "Матеріал",
                 col_dims: "Розміри",
                 col_price_pc: "Ціна / 1 шт",
                 col_qty: "К-сть",
@@ -161,8 +160,7 @@
                 btn_select_all: "Select All",
                 btn_deselect_all: "Deselect All",
                 inv_cols_title: "Columns for Invoice:",
-                col_photo: "Photo",
-                col_material: "Material",
+                                col_material: "Material",
                 col_dims: "Dimensions",
                 col_price_pc: "Price / 1 pc",
                 col_qty: "Qty",
@@ -222,8 +220,7 @@
         let materials = [];
         let items = [];
         let columnVisibility = {
-            photo: true,
-            mat: true,
+                        mat: true,
             dims: true,
             price: true,
             qty: true,
@@ -498,7 +495,7 @@
                             }
                             if (res.data.settings.column_visibility && typeof res.data.settings.column_visibility === 'object') {
                                 columnVisibility = Object.assign({}, columnVisibility, res.data.settings.column_visibility);
-                                ['photo', 'mat', 'dims', 'price', 'qty', 'sum'].forEach(col => {
+                                ['mat', 'dims', 'price', 'qty', 'sum'].forEach(col => {
                                     const cb = document.getElementById('col-toggle-' + col);
                                     if (cb && typeof columnVisibility[col] !== 'undefined') {
                                         cb.checked = !!columnVisibility[col];
@@ -544,7 +541,7 @@
                     }
                     if (parsed.settings && parsed.settings.column_visibility && typeof parsed.settings.column_visibility === 'object') {
                         columnVisibility = Object.assign({}, columnVisibility, parsed.settings.column_visibility);
-                        ['photo', 'mat', 'dims', 'price', 'qty', 'sum'].forEach(col => {
+                        ['mat', 'dims', 'price', 'qty', 'sum'].forEach(col => {
                             const cb = document.getElementById('col-toggle-' + col);
                             if (cb && typeof columnVisibility[col] !== 'undefined') {
                                 cb.checked = !!columnVisibility[col];
@@ -952,6 +949,55 @@
         }
 
         
+        
+        // Дії для накладної (Invoice actions)
+        window.duplicateInvoiceItem = function(id) {
+            const orig = items.find(it => String(it.id) === String(id));
+            if (!orig) return;
+            const copyName = orig.name ? (orig.name + (currentLang === 'uk' ? ' (копія)' : ' (copy)')) : (currentLang === 'uk' ? 'Копія виробу' : 'Copy of product');
+            const newItem = {
+                ...orig,
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                name: copyName,
+                in_invoice: true,
+                selected: true
+            };
+            items.push(newItem);
+            saveData();
+            renderItems();
+            renderCatalogTab();
+            showToast(currentLang === 'uk' ? 'Копію створено в накладній' : 'Copy created in invoice', 'success');
+        };
+
+        // Дії для каталогу (Catalog actions)
+        window.duplicateCatalogItem = function(id) {
+            const orig = items.find(it => String(it.id) === String(id));
+            if (!orig) return;
+            const copyName = orig.name ? (orig.name + (currentLang === 'uk' ? ' (копія)' : ' (copy)')) : (currentLang === 'uk' ? 'Копія виробу' : 'Copy of product');
+            const newItem = {
+                ...orig,
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                name: copyName,
+                in_invoice: false,
+                selected: false
+            };
+            items.push(newItem);
+            saveData();
+            renderCatalogTab();
+            renderItems();
+            showToast(currentLang === 'uk' ? 'Копію створено в каталозі' : 'Copy created in catalog', 'success');
+        };
+
+        window.askDeleteCatalogItem = function(id) {
+            showConfirmModal(() => {
+                items = items.filter(it => String(it.id) !== String(id));
+                saveData();
+                renderCatalogTab();
+                renderItems();
+                showToast(currentLang === 'uk' ? 'Виріб видалено з каталогу' : 'Item deleted from catalog', 'success');
+            });
+        };
+
         // Invoice toggle and catalog helpers
         window.addToInvoice = function(id) {
             const it = items.find(x => String(x.id) === String(id));
@@ -1037,9 +1083,6 @@
                         <td style="text-align:center;">
                             <span class="wc-drag-handle" title="Перетягнути для зміни порядку">⠿</span>
                         </td>
-                        <td class="col-photo-cell">
-                            ${item.photo ? `<img src="${escapeHtml(item.photo)}" style="width:36px; height:36px; object-fit:cover; border-radius:4px;">` : `<span style="color:#cbd5e1; font-size:16px;">🖼️</span>`}
-                        </td>
                         <td>
                             <strong>${escapeHtml(item.name)}</strong>
                         </td>
@@ -1057,9 +1100,9 @@
                                         ${t('btn_add_to_inv')}
                                     </button>
                                 `}
-                                <button type="button" class="btn btn-outline btn-sm" onclick="duplicateItem('${item.id}')" title="Дублювати">📋</button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="duplicateCatalogItem('${item.id}')" title="Дублювати">📋</button>
                                 <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="Редагувати">✏️</button>
-                                <button type="button" class="btn-delete-transp" onclick="askDeleteItem('${item.id}')" title="Видалити">🗑️</button>
+                                <button type="button" class="btn-delete-transp" onclick="askDeleteCatalogItem('${item.id}')" title="Видалити">🗑️</button>
                             </div>
                         </td>
                     </tr>
@@ -1113,9 +1156,6 @@
                         <td>
                             <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="setItemSelected('${item.id}', this.checked)">
                         </td>
-                        <td class="col-photo-cell">
-                            ${item.photo ? `<img src="${escapeHtml(item.photo)}" style="width:36px; height:36px; object-fit:cover; border-radius:4px;">` : `<span style="color:#cbd5e1; font-size:16px;">🖼️</span>`}
-                        </td>
                         <td>
                             <strong>${escapeHtml(item.name)}</strong>
                         </td>
@@ -1129,9 +1169,9 @@
                             ${sum} ${t('curr')}
                         </td>
                         <td class="no-invoice" style="text-align:right; white-space:nowrap;">
-                            <button type="button" class="btn btn-outline btn-sm" onclick="duplicateItem('${item.id}')" title="Дублювати">📋</button>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="duplicateCatalogItem('${item.id}')" title="Дублювати">📋</button>
                             <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="Редагувати">✏️</button>
-                            <button type="button" class="btn btn-danger btn-sm" onclick="askDeleteItem('${item.id}')" title="Видалити">🗑️</button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="askDeleteCatalogItem('${item.id}')" title="Видалити">🗑️</button>
                         </td>
                     </tr>
                 `;
@@ -1155,16 +1195,16 @@
         }
 
         window.setItemSelected = function(id, selected) {
-            const item = items.find(it => it.id === id);
+            const item = items.find(it => String(it.id) === String(id));
             if (item) {
-                item.selected = selected;
+                item.selected = Boolean(selected);
                 saveData(true);
                 updateCalculations();
             }
         };
 
         window.setItemQty = function(id, val) {
-            const item = items.find(it => it.id === id);
+            const item = items.find(it => String(it.id) === String(id));
             if (item) {
                 item.qty = Math.max(1, parseInt(val, 10) || 1);
                 saveData(true);
@@ -1173,9 +1213,14 @@
         };
 
         window.toggleSelectAll = function(selectAll) {
-            items.forEach(it => it.selected = selectAll);
+            const flag = Boolean(selectAll);
+            items.forEach(it => {
+                if (it.in_invoice !== false) {
+                    it.selected = flag;
+                }
+            });
             const topCb = document.getElementById('select-all-top');
-            if (topCb) topCb.checked = selectAll;
+            if (topCb) topCb.checked = flag;
             saveData(true);
             renderItems();
         };
@@ -1216,8 +1261,7 @@
                 });
             };
 
-            setDisplay('.col-photo-header, .col-photo-cell', columnVisibility.photo);
-            setDisplay('.col-mat-header, .col-mat-cell', columnVisibility.mat);
+                        setDisplay('.col-mat-header, .col-mat-cell', columnVisibility.mat);
             setDisplay('.col-dims-header, .col-dims-cell', columnVisibility.dims);
             setDisplay('.col-price-header, .col-price-cell', columnVisibility.price);
             setDisplay('.col-qty-header, .col-qty-cell', columnVisibility.qty);
@@ -1663,325 +1707,7 @@
             window.location.href = 'mailto:?subject=' + subject + '&body=' + encodeURIComponent(body);
         };
 
-
-        window.askDeleteItem = function(id) {
-            showConfirmModal(() => {
-                items = items.filter(it => it.id !== id);
-                renderItems();
-                saveData();
-            });
-        };
-
-        window.renderCatalogTab = function() {
-            const tbody = document.getElementById('catalog-tab-tbody');
-            if (!tbody) return;
-
-            if (items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:30px;">${t('no_catalog_items')}</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = items.map((item) => {
-                const dimsText = (item.len && item.width) ? `${item.len} × ${item.width} мм` : '-';
-                const isInInv = (item.in_invoice !== false);
-
-                return `
-                    <tr id="catalog-row-${item.id}" data-id="${item.id}">
-                        <td style="text-align:center;">
-                            <span class="wc-drag-handle" title="Перетягнути для зміни порядку">⠿</span>
-                        </td>
-                        <td class="col-photo-cell">
-                            ${item.photo ? `<img src="${escapeHtml(item.photo)}" style="width:36px; height:36px; object-fit:cover; border-radius:4px;">` : `<span style="color:#cbd5e1; font-size:16px;">🖼️</span>`}
-                        </td>
-                        <td>
-                            <strong>${escapeHtml(item.name)}</strong>
-                        </td>
-                        <td>${escapeHtml(item.material || '-')}</td>
-                        <td>${dimsText}</td>
-                        <td style="text-align:right; font-weight:600;">${parseFloat(item.price || 0).toFixed(2)} ${t('curr')}</td>
-                        <td style="text-align:center;">
-                            <div style="display:inline-flex; gap:6px; align-items:center;">
-                                ${isInInv ? `
-                                    <button type="button" class="btn btn-outline btn-sm" style="color:var(--tc-green); border-color:var(--tc-green);" onclick="removeFromInvoice('${item.id}')" title="${t('btn_remove_from_inv')}">
-                                        ✓ ${t('in_invoice_badge')}
-                                    </button>
-                                ` : `
-                                    <button type="button" class="btn btn-green btn-sm" onclick="addToInvoice('${item.id}')">
-                                        ${t('btn_add_to_inv')}
-                                    </button>
-                                `}
-                                <button type="button" class="btn btn-outline btn-sm" onclick="duplicateItem('${item.id}')" title="Дублювати">📋</button>
-                                <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="Редагувати">✏️</button>
-                                <button type="button" class="btn-delete-transp" onclick="askDeleteItem('${item.id}')" title="Видалити">🗑️</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            setupUnifiedTableDnD('catalog-tab-tbody', (srcId, targetId, isBelow) => {
-                const srcIdx = items.findIndex(it => String(it.id) === String(srcId));
-                const targetIdx = items.findIndex(it => String(it.id) === String(targetId));
-                if (srcIdx !== -1 && targetIdx !== -1) {
-                    const [moved] = items.splice(srcIdx, 1);
-                    let insertAt = items.findIndex(it => String(it.id) === String(targetId));
-                    if (isBelow) insertAt += 1;
-                    items.splice(insertAt, 0, moved);
-                    renderCatalogTab();
-                    renderItems();
-                    saveData();
-                }
-            });
-        };
-
-        function renderItems() {
-            const tbody = document.getElementById('items-tbody');
-            if (!tbody) return;
-
-            const hideUnselected = document.getElementById('filter-selected')?.checked || false;
-            // Invoice items: only items where in_invoice is true (default true)
-            let invoiceItems = items.filter(it => it.in_invoice !== false);
-            let displayItems = invoiceItems;
-            if (hideUnselected) {
-                displayItems = invoiceItems.filter(it => it.selected);
-            }
-
-            if (displayItems.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:24px;">${invoiceItems.length === 0 ? t('no_invoice_items') : t('no_items')}</td></tr>`;
-                updateCalculations();
-                return;
-            }
-
-            tbody.innerHTML = displayItems.map((item) => {
-                const isSelected = item.selected !== false;
-                const qty = item.qty || 1;
-                const sum = (item.price * qty).toFixed(2);
-                const dimsText = (item.len && item.width) ? `${item.len} × ${item.width} мм` : '-';
-
-                return `
-                    <tr id="row-${item.id}" data-id="${item.id}">
-                        <td class="no-invoice" style="text-align:center;">
-                            <span class="wc-drag-handle" title="Перетягнути для зміни порядку">⠿</span>
-                        </td>
-                        <td>
-                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="setItemSelected('${item.id}', this.checked)">
-                        </td>
-                        <td class="col-photo-cell">
-                            ${item.photo ? `<img src="${escapeHtml(item.photo)}" style="width:36px; height:36px; object-fit:cover; border-radius:4px;">` : `<span style="color:#cbd5e1; font-size:16px;">🖼️</span>`}
-                        </td>
-                        <td>
-                            <strong>${escapeHtml(item.name)}</strong>
-                        </td>
-                        <td class="col-mat-cell">${escapeHtml(item.material || '-')}</td>
-                        <td class="col-dims-cell">${dimsText}</td>
-                        <td class="col-price-cell">${parseFloat(item.price).toFixed(2)} ${t('curr')}</td>
-                        <td class="col-qty-cell">
-                            <input type="number" min="1" value="${qty}" style="width:65px; padding:4px 6px;" onchange="setItemQty('${item.id}', this.value)">
-                        </td>
-                        <td class="col-sum-cell" style="text-align:right; font-weight:700;">
-                            ${sum} ${t('curr')}
-                        </td>
-                        <td class="no-invoice" style="text-align:right; white-space:nowrap;">
-                            <button type="button" class="btn btn-outline btn-sm" onclick="duplicateItem('${item.id}')" title="Дублювати">📋</button>
-                            <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="Редагувати">✏️</button>
-                            <button type="button" class="btn btn-danger btn-sm" onclick="askDeleteItem('${item.id}')" title="Видалити">🗑️</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            applyColumnVisibility();
-            setupUnifiedTableDnD('items-tbody', (srcId, targetId, isBelow) => {
-                const srcIdx = items.findIndex(it => String(it.id) === String(srcId));
-                const targetIdx = items.findIndex(it => String(it.id) === String(targetId));
-                if (srcIdx !== -1 && targetIdx !== -1) {
-                    const [moved] = items.splice(srcIdx, 1);
-                    let insertAt = items.findIndex(it => String(it.id) === String(targetId));
-                    if (isBelow) insertAt += 1;
-                    items.splice(insertAt, 0, moved);
-                    renderItems();
-                    renderCatalogTab();
-                    saveData();
-                }
-            });
-            updateCalculations();
-        }
-
-        window.setItemSelected = function(id, selected) {
-            const item = items.find(it => it.id === id);
-            if (item) {
-                item.selected = selected;
-                saveData(true);
-                updateCalculations();
-            }
-        };
-
-        window.setItemQty = function(id, val) {
-            const item = items.find(it => it.id === id);
-            if (item) {
-                item.qty = Math.max(1, parseInt(val, 10) || 1);
-                saveData(true);
-                renderItems();
-            }
-        };
-
-        window.toggleSelectAll = function(selectAll) {
-            items.forEach(it => it.selected = selectAll);
-            const topCb = document.getElementById('select-all-top');
-            if (topCb) topCb.checked = selectAll;
-            saveData(true);
-            renderItems();
-        };
-
-        function updateCalculations() {
-            let selectedCount = 0;
-            let totalQty = 0;
-            let grandTotal = 0;
-
-            items.forEach(item => {
-                if (item.selected) {
-                    selectedCount++;
-                    const qty = item.qty || 1;
-                    totalQty += qty;
-                    grandTotal += (item.price * qty);
-                }
-            });
-
-            const countEl = document.getElementById('sum-items-count');
-            const qtyEl = document.getElementById('sum-total-qty');
-            const sumEl = document.getElementById('sum-grand-total');
-
-            if (countEl) countEl.textContent = selectedCount;
-            if (qtyEl) qtyEl.textContent = totalQty;
-            if (sumEl) sumEl.textContent = grandTotal.toFixed(2);
-        }
-
-        window.toggleColumnVisibility = function(colName, isVisible) {
-            columnVisibility[colName] = isVisible;
-            applyColumnVisibility();
-            saveData(true);
-        };
-
-        function applyColumnVisibility() {
-            const setDisplay = (selector, visible) => {
-                document.querySelectorAll(selector).forEach(el => {
-                    el.style.display = visible ? '' : 'none';
-                });
-            };
-
-            setDisplay('.col-photo-header, .col-photo-cell', columnVisibility.photo);
-            setDisplay('.col-mat-header, .col-mat-cell', columnVisibility.mat);
-            setDisplay('.col-dims-header, .col-dims-cell', columnVisibility.dims);
-            setDisplay('.col-price-header, .col-price-cell', columnVisibility.price);
-            setDisplay('.col-qty-header, .col-qty-cell', columnVisibility.qty);
-            setDisplay('.col-sum-header, .col-sum-cell', columnVisibility.sum);
-        }
-
-        window.enterInvoiceMode = function() {
-            document.body.classList.add('invoice-mode');
-            const dateEl = document.getElementById('inv-date');
-            if (dateEl) {
-                const now = new Date();
-                dateEl.textContent = now.toLocaleDateString(currentLang === 'uk' ? 'uk-UA' : 'en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-            }
-            const exitBtn = document.getElementById('exit-invoice-container');
-            if (exitBtn) exitBtn.style.display = 'block';
-        };
-
-        window.exitInvoiceMode = function() {
-            document.body.classList.remove('invoice-mode');
-            const exitBtn = document.getElementById('exit-invoice-container');
-            if (exitBtn) exitBtn.style.display = 'none';
-        };
-
-        
-        let draggedRow = null;
-        function setupDragAndDrop() {
-            const tbody = document.getElementById('items-tbody') || document.getElementById('catalog-items-body');
-            if (!tbody) return;
-
-            const rows = tbody.querySelectorAll('tr[data-id]');
-            rows.forEach(row => {
-                const handle = row.querySelector('.wc-drag-handle');
-                if (!handle) return;
-
-                // Only allow dragging via the handle
-                handle.onmousedown = () => {
-                    row.draggable = true;
-                };
-                handle.onmouseup = () => {
-                    row.draggable = false;
-                };
-
-                row.ondragstart = (e) => {
-                    if (!row.draggable) {
-                        e.preventDefault();
-                        return;
-                    }
-                    draggedRow = row;
-                    row.classList.add('dragging');
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', row.getAttribute('data-id') || '');
-                };
-
-                row.ondragend = () => {
-                    row.draggable = false;
-                    row.classList.remove('dragging');
-                    rows.forEach(r => {
-                        r.classList.remove('drop-above', 'drop-below');
-                    });
-                    draggedRow = null;
-                };
-
-                row.ondragover = (e) => {
-                    e.preventDefault();
-                    if (!draggedRow || draggedRow === row) return;
-                    const rect = row.getBoundingClientRect();
-                    const mid = rect.top + rect.height / 2;
-                    row.classList.remove('drop-above', 'drop-below');
-                    if (e.clientY < mid) {
-                        row.classList.add('drop-above');
-                    } else {
-                        row.classList.add('drop-below');
-                    }
-                };
-
-                row.ondragleave = (e) => {
-                    row.classList.remove('drop-above', 'drop-below');
-                };
-
-                row.ondrop = (e) => {
-                    e.preventDefault();
-                    if (!draggedRow || draggedRow === row) return;
-
-                    const srcId = draggedRow.getAttribute('data-id');
-                    const targetId = row.getAttribute('data-id');
-                    const isBelow = row.classList.contains('drop-below');
-
-                    const srcIdx = items.findIndex(it => String(it.id) === String(srcId));
-                    const targetIdx = items.findIndex(it => String(it.id) === String(targetId));
-
-                    if (srcIdx !== -1 && targetIdx !== -1) {
-                        const [moved] = items.splice(srcIdx, 1);
-                        let insertAt = items.findIndex(it => String(it.id) === String(targetId));
-                        if (isBelow) {
-                            insertAt += 1;
-                        }
-                        items.splice(insertAt, 0, moved);
-                        renderItems();
-                        saveData();
-                    }
-
-                    row.classList.remove('drop-above', 'drop-below');
-                };
-            });
-        }
-
-function escapeHtml(str) {
+        window.escapeHtml = function(str) {
             if (!str) return '';
             return String(str)
                 .replace(/&/g, '&amp;')
@@ -1989,7 +1715,7 @@ function escapeHtml(str) {
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
-        }
+        };
 
         document.addEventListener('DOMContentLoaded', function() {
             const savedLocalLang = localStorage.getItem(LANG_STORAGE_KEY);
