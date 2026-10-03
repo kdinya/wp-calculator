@@ -84,6 +84,17 @@ class WpCalculatorAdmin {
                 'lbl_changelog' => 'Зміни в релізі:',
                 'modal_edit_prod_title' => 'Редагувати виріб',
                 'modal_edit_mat_title' => 'Редагувати матеріал',
+                'tab_catalog' => 'Всі вироби',
+                'catalog_title' => '📋 Каталог усіх створених виробів',
+                'catalog_desc' => 'Тут зберігаються всі ваші створені вироби. Ви можете додавати їх у накладну, редагувати, дублювати або впорядковувати перетягуванням.',
+                'chk_add_to_invoice' => 'Додати в накладну',
+                'btn_add_from_catalog' => '+ Додати з каталогу',
+                'btn_add_to_inv' => '+ В накладну',
+                'in_invoice_badge' => 'В накладній ✓',
+                'btn_remove_from_inv' => 'Прибрати з накладної',
+                'modal_catalog_title' => 'Додати вироби з каталогу в накладну',
+                'no_catalog_items' => 'Немає створених виробів у каталозі',
+                'no_invoice_items' => 'У накладній ще немає виробів. Додайте створений виріб або оберіть з вкладки «Всі вироби».',
                 'modal_del_title' => 'Підтвердження видалення',
                 'modal_del_text' => 'Ви дійсно бажаєте видалити цей елемент? Цю дію неможливо буде скасувати.',
                 'btn_cancel' => 'Скасувати',
@@ -228,6 +239,9 @@ class WpCalculatorAdmin {
                     <button type="button" class="tc-tab-btn active" id="tab-nav-calc" onclick="switchWcTab('calc')">
                         <span>🧮</span> <span data-i18n="tab_calc"><?php echo esc_html($t['tab_calc']); ?></span>
                     </button>
+                    <button type="button" class="tc-tab-btn" id="tab-nav-catalog" onclick="switchWcTab('catalog')">
+                        <span>📋</span> <span data-i18n="tab_catalog"><?php echo esc_html($t['tab_catalog']); ?></span>
+                    </button>
                     <button type="button" class="tc-tab-btn" id="tab-nav-appearance" onclick="switchWcTab('appearance')">
                         <span>🎨</span> <span data-i18n="tab_appearance"><?php echo esc_html($t['tab_appearance']); ?></span>
                     </button>
@@ -305,7 +319,13 @@ class WpCalculatorAdmin {
                                         <input type="number" step="0.01" id="add-price" placeholder="0.00">
                                     </div>
                                     <div>
-                                        <button type="button" class="btn btn-dark" onclick="addCustomProduct()" data-i18n="btn_add_save"><?php echo esc_html($t['btn_add_save']); ?></button>
+                                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                            <button type="button" class="btn btn-dark" onclick="addCustomProduct()" data-i18n="btn_add_save"><?php echo esc_html($t['btn_add_save']); ?></button>
+                                            <label class="tc-checkbox-label" style="display:inline-flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; margin:0; user-select:none;">
+                                                <input type="checkbox" id="add-to-invoice-chk" checked>
+                                                <span data-i18n="chk_add_to_invoice"><?php echo esc_html($t['chk_add_to_invoice']); ?></span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -326,6 +346,7 @@ class WpCalculatorAdmin {
                                             <input type="checkbox" id="filter-selected" onchange="renderItems()">
                                             <span data-i18n="chk_hide_unselected"><?php echo esc_html($t['chk_hide_unselected']); ?></span>
                                         </label>
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="openAddFromCatalogModal()" data-i18n="btn_add_from_catalog"><?php echo esc_html($t['btn_add_from_catalog']); ?></button>
                                         <button type="button" class="btn btn-outline btn-sm" onclick="toggleSelectAll(true)" data-i18n="btn_select_all"><?php echo esc_html($t['btn_select_all']); ?></button>
                                         <button type="button" class="btn btn-outline btn-sm" onclick="toggleSelectAll(false)" data-i18n="btn_deselect_all"><?php echo esc_html($t['btn_deselect_all']); ?></button>
                                     </div>
@@ -601,6 +622,21 @@ class WpCalculatorAdmin {
                         <div style="display:flex; justify-content:center; gap:12px;">
                             <button type="button" class="btn btn-outline" onclick="closeConfirmModal()" data-i18n="btn_cancel"><?php echo esc_html($t['btn_cancel']); ?></button>
                             <button type="button" class="btn btn-danger" id="confirm-del-btn" data-i18n="btn_delete"><?php echo esc_html($t['btn_delete']); ?></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+                <!-- МОДАЛЬНЕ ВІКНО: ДОДАТИ З КАТАЛОГУ В НАКЛАДНУ -->
+                <div id="modal-catalog-picker" class="modal-backdrop" style="display:none;" onclick="if(event.target===this)closeAddFromCatalogModal();">
+                    <div class="modal-content" style="max-width:650px;">
+                        <h3 data-i18n="modal_catalog_title"><?php echo esc_html($t['modal_catalog_title']); ?></h3>
+                        <div id="catalog-picker-list" style="max-height:360px; overflow-y:auto; margin:16px 0;">
+                            <!-- Список для вибору -->
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-outline" onclick="closeAddFromCatalogModal()" data-i18n="btn_cancel"><?php echo esc_html($t['btn_cancel']); ?></button>
                         </div>
                     </div>
                 </div>

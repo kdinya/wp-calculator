@@ -103,6 +103,17 @@
                 update_success: "Плагін успішно оновлено! Перезавантажте сторінку.",
                 modal_edit_prod_title: "Редагувати виріб",
                 modal_edit_mat_title: "Редагувати матеріал",
+                tab_catalog: "Всі вироби",
+                catalog_title: "📋 Каталог усіх створених виробів",
+                catalog_desc: "Тут зберігаються всі ваші створені вироби. Ви можете додавати їх у накладну, редагувати, дублювати або впорядковувати перетягуванням.",
+                chk_add_to_invoice: "Додати в накладну",
+                btn_add_from_catalog: "+ Додати з каталогу",
+                btn_add_to_inv: "+ В накладну",
+                in_invoice_badge: "В накладній ✓",
+                btn_remove_from_inv: "Прибрати з накладної",
+                modal_catalog_title: "Додати вироби з каталогу в накладну",
+                no_catalog_items: "Немає створених виробів у каталозі",
+                no_invoice_items: "У накладній ще немає виробів. Додайте створений виріб або оберіть з вкладки «Всі вироби».",
                 modal_del_title: "Підтвердження видалення",
                 modal_del_text: "Ви дійсно бажаєте видалити цей елемент? Цю дію неможливо буде скасувати.",
                 btn_cancel: "Скасувати",
@@ -921,18 +932,143 @@
             };
         }
 
+        
+        // Invoice toggle and catalog helpers
+        window.addToInvoice = function(id) {
+            const it = items.find(x => String(x.id) === String(id));
+            if (it) {
+                it.in_invoice = true;
+                it.selected = true;
+                renderItems();
+                renderCatalogTab();
+                saveData();
+                showToast(currentLang === 'uk' ? 'Виріб додано до накладної' : 'Item added to invoice', 'success');
+            }
+        };
+
+        window.removeFromInvoice = function(id) {
+            const it = items.find(x => String(x.id) === String(id));
+            if (it) {
+                it.in_invoice = false;
+                renderItems();
+                renderCatalogTab();
+                saveData();
+                showToast(currentLang === 'uk' ? 'Виріб вилучено з накладної' : 'Item removed from invoice', 'info');
+            }
+        };
+
+        window.openAddFromCatalogModal = function() {
+            const modal = document.getElementById('modal-catalog-picker');
+            const container = document.getElementById('catalog-picker-list');
+            if (!modal || !container) return;
+
+            const notInInv = items.filter(it => it.in_invoice === false);
+            if (notInInv.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:24px; color:#64748b;">${items.length === 0 ? t('no_catalog_items') : (currentLang === 'uk' ? 'Усі вироби з каталогу вже є в накладній!' : 'All catalog products are already in the invoice!')}</div>`;
+            } else {
+                container.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        ${notInInv.map(it => `
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">
+                                <div>
+                                    <strong style="color:var(--tc-dark); font-size:14px;">${escapeHtml(it.name)}</strong>
+                                    <div style="font-size:12px; color:#64748b; margin-top:2px;">
+                                        ${it.material ? `${escapeHtml(it.material)} · ` : ''}${it.len && it.width ? `${it.len}×${it.width} мм · ` : ''}${parseFloat(it.price||0).toFixed(2)} ${t('curr')}
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-green btn-sm" onclick="addToInvoice('${it.id}'); openAddFromCatalogModal();">
+                                    ${t('btn_add_to_inv')}
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            modal.style.display = 'flex';
+        };
+
+        window.closeAddFromCatalogModal = function() {
+            const modal = document.getElementById('modal-catalog-picker');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.renderCatalogTab = function() {
+            const tbody = document.getElementById('catalog-tab-tbody');
+            if (!tbody) return;
+
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:30px;">${t('no_catalog_items')}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = items.map((item) => {
+                const dimsText = (item.len && item.width) ? `${item.len} × ${item.width} мм` : '-';
+                const isInInv = (item.in_invoice !== false);
+
+                return `
+                    <tr id="catalog-row-${item.id}" data-id="${item.id}">
+                        <td style="text-align:center;">
+                            <span class="wc-drag-handle" title="Перетягнути для зміни порядку">⠿</span>
+                        </td>
+                        <td class="col-photo-cell">
+                            ${item.photo ? `<img src="${escapeHtml(item.photo)}" style="width:36px; height:36px; object-fit:cover; border-radius:4px;">` : `<span style="color:#cbd5e1; font-size:16px;">🖼️</span>`}
+                        </td>
+                        <td>
+                            <strong>${escapeHtml(item.name)}</strong>
+                        </td>
+                        <td>${escapeHtml(item.material || '-')}</td>
+                        <td>${dimsText}</td>
+                        <td style="text-align:right; font-weight:600;">${parseFloat(item.price || 0).toFixed(2)} ${t('curr')}</td>
+                        <td style="text-align:center;">
+                            <div style="display:inline-flex; gap:6px; align-items:center;">
+                                ${isInInv ? `
+                                    <button type="button" class="btn btn-outline btn-sm" style="color:var(--tc-green); border-color:var(--tc-green);" onclick="removeFromInvoice('${item.id}')" title="${t('btn_remove_from_inv')}">
+                                        ✓ ${t('in_invoice_badge')}
+                                    </button>
+                                ` : `
+                                    <button type="button" class="btn btn-green btn-sm" onclick="addToInvoice('${item.id}')">
+                                        ${t('btn_add_to_inv')}
+                                    </button>
+                                `}
+                                <button type="button" class="btn btn-outline btn-sm" onclick="duplicateItem('${item.id}')" title="Дублювати">📋</button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="Редагувати">✏️</button>
+                                <button type="button" class="btn-delete-transp" onclick="askDeleteItem('${item.id}')" title="Видалити">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            setupUnifiedDnD('catalog-tab-tbody', (srcId, targetId, isBelow) => {
+                const srcIdx = items.findIndex(it => String(it.id) === String(srcId));
+                const targetIdx = items.findIndex(it => String(it.id) === String(targetId));
+                if (srcIdx !== -1 && targetIdx !== -1) {
+                    const [moved] = items.splice(srcIdx, 1);
+                    let insertAt = items.findIndex(it => String(it.id) === String(targetId));
+                    if (isBelow) insertAt += 1;
+                    items.splice(insertAt, 0, moved);
+                    renderCatalogTab();
+                    renderItems();
+                    saveData();
+                }
+            });
+        };
+
         function renderItems() {
             const tbody = document.getElementById('items-tbody');
             if (!tbody) return;
 
             const hideUnselected = document.getElementById('filter-selected')?.checked || false;
-            let displayItems = items;
+            // Invoice items: only items where in_invoice is true (default true)
+            let invoiceItems = items.filter(it => it.in_invoice !== false);
+            let displayItems = invoiceItems;
             if (hideUnselected) {
-                displayItems = items.filter(it => it.selected);
+                displayItems = invoiceItems.filter(it => it.selected);
             }
 
             if (displayItems.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:20px;">${t('no_items')}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:24px;">${invoiceItems.length === 0 ? t('no_invoice_items') : t('no_items')}</td></tr>`;
                 updateCalculations();
                 return;
             }
