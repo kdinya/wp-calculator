@@ -36,6 +36,7 @@ function wood_calc_get_stored_data() {
         ),
     );
     $found_storage = false;
+    $primary_stored = null;
 
     foreach ($storage_keys as $key) {
         $stored = get_option($key, null);
@@ -44,6 +45,9 @@ function wood_calc_get_stored_data() {
         }
 
         $found_storage = true;
+        if ($key === 'wood_calc_store_v3') {
+            $primary_stored = $stored;
+        }
 
         if (!empty($stored['settings']) && is_array($stored['settings'])) {
             foreach ($stored['settings'] as $setting_key => $setting_value) {
@@ -94,7 +98,10 @@ function wood_calc_get_stored_data() {
         'initialized' => $found_storage && (!empty($merged_materials) || !empty($merged_items)),
     );
 
-    if ($found_storage) {
+    $primary_compare = is_array($primary_stored)
+        ? array_intersect_key($primary_stored, array_flip(array('materials', 'items', 'settings', 'initialized')))
+        : null;
+    if ($found_storage && $primary_compare !== $cached_data) {
         update_option('wood_calc_store_v3', $cached_data, false);
     }
 
@@ -257,8 +264,6 @@ function wood_calc_save_data() {
     );
 
     update_option('wood_calc_store_v3', $save_payload, false);
-    update_option('wood_calc_store_v4', $save_payload, false);
-    update_option('wood_calc_store_backup', $save_payload, false);
 
     wp_send_json_success(array('message' => 'Дані успішно збережено.'));
 }

@@ -641,6 +641,7 @@
 
         let saveDebounceTimer = null;
         let saveSequenceId = 0;
+        let lastServerPayload = null;
         function saveData(silent) {
             if (!isDataInitialized) return;
             const statusEl = document.getElementById('wc-status');
@@ -658,13 +659,23 @@
             };
 
             // Synchronously mirror immediately to LocalStorage (zero lag, reliable mirror)
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
+            const payloadJson = JSON.stringify(payload);
+            localStorage.setItem(LOCAL_STORAGE_KEY, payloadJson);
             localStorage.setItem(LANG_STORAGE_KEY, currentLang);
 
-            // Debounce server AJAX requests by 250ms to prevent spamming database on rapid clicks/input
+            // Debounce server AJAX requests by 250ms to prevent spamming database on rapid clicks/input.
             if (saveDebounceTimer) {
                 clearTimeout(saveDebounceTimer);
+                saveDebounceTimer = null;
             }
+
+            // Avoid another database request when the effective payload did not change.
+            if (payloadJson === lastServerPayload) {
+                saveSequenceId++;
+                if (statusEl) statusEl.textContent = t('saved');
+                return;
+            }
+
             saveDebounceTimer = setTimeout(function() {
                 const currentSeq = ++saveSequenceId;
                 fetch(AJAX_URL + '?action=wood_calc_save&nonce=' + encodeURIComponent(NONCE), {
@@ -675,8 +686,9 @@
                 .then(r => r.json())
                 .then(res => {
                     if (currentSeq !== saveSequenceId) return;
-                    if (res.success && statusEl) {
-                        statusEl.textContent = t('saved');
+                    if (res.success) {
+                        lastServerPayload = payloadJson;
+                        if (statusEl) statusEl.textContent = t('saved');
                     }
                 })
                 .catch(() => {
@@ -758,11 +770,35 @@
             }
         };
 
+        function relinkItemsToMaterials() {
+            const materialsByName = new Map();
+            materials.forEach(material => {
+                const key = String(material.name || '').trim().toLocaleLowerCase();
+                if (key) materialsByName.set(key, material);
+            });
+
+            let changed = false;
+            items.forEach(item => {
+                const key = String(item.material || '').trim().toLocaleLowerCase();
+                const material = materialsByName.get(key);
+                if (!material) return;
+
+                if (item.material !== material.name || item.material_id !== material.id) {
+                    item.material = material.name;
+                    item.material_id = material.id;
+                    changed = true;
+                }
+            });
+            return changed;
+        }
+
         function renderMaterials() {
             const tbody = document.getElementById('materials-tbody');
             const calcMat = document.getElementById('calc-mat');
             const addMat = document.getElementById('add-mat');
             const editProdMat = document.getElementById('edit-prod-mat');
+
+            relinkItemsToMaterials();
 
             if (tbody) {
                 if (materials.length === 0) {
@@ -808,6 +844,8 @@
                 name: name,
                 price: price
             });
+
+            relinkItemsToMaterials();
 
             if (nameInput) nameInput.value = '';
             if (priceInput) priceInput.value = '';
@@ -867,6 +905,7 @@
             const name = (nameEl ? nameEl.value : '').trim();
             const selectedOpt = matEl ? matEl.options[matEl.selectedIndex] : null;
             const matName = selectedOpt ? selectedOpt.getAttribute('data-name') : '';
+            const matId = selectedOpt ? selectedOpt.value : '';
             const len = parseFloat(lenEl ? lenEl.value : 0) || 0;
             const width = parseFloat(widthEl ? widthEl.value : 0) || 0;
             const price = parseFloat(priceEl ? priceEl.value : 0) || 0;
@@ -892,6 +931,7 @@
                 id: 'p_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
                 name: name,
                 material: matName || '-',
+                material_id: matId,
                 len: len,
                 width: width,
                 price: price,
@@ -1016,6 +1056,7 @@
                     id: newId,
                     name: name,
                     material: matName || (orig ? orig.material : ''),
+                    material_id: selectedOpt ? selectedOpt.value : (orig ? (orig.material_id || '') : ''),
                     len: len,
                     width: width,
                     price: price,
@@ -1043,6 +1084,7 @@
                 if (!item) return;
                 item.name = name;
                 item.material = matName || item.material;
+                item.material_id = selectedOpt ? selectedOpt.value : (item.material_id || '');
                 item.len = len;
                 item.width = width;
                 item.price = price;
@@ -2063,6 +2105,18 @@
             showToast(t('catalog_item_added'));
         };
 
+        function syncModalBodyLock() {
+            const modalIsOpen = Array.from(document.querySelectorAll('.modal-backdrop')).some(modal => {
+                return window.getComputedStyle(modal).display !== 'none';
+            });
+            document.body.classList.toggle('wc-modal-open', modalIsOpen);
+        }
+
+        if (window.MutationObserver) {
+            const modalObserver = new MutationObserver(syncModalBodyLock);
+            modalObserver.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['style'] });
+        }
+        syncModalBodyLock();
+
 });
-        loadData();
     })();

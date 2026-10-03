@@ -445,6 +445,9 @@
                 align-items: flex-end;
             }
 
+            body.wc-modal-open {
+                overflow: hidden !important;
+            }
             .modal-backdrop {
                 display: none;
                 position: fixed;
@@ -453,6 +456,8 @@
                 z-index: 999999;
                 align-items: center;
                 justify-content: center;
+                overscroll-behavior: contain;
+                touch-action: none;
             }
             .modal-content {
                 background: #ffffff;
@@ -461,6 +466,7 @@
                 max-width: 480px;
                 padding: 24px;
                 box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+                touch-action: auto;
             }
 
             .grid-add-product {
