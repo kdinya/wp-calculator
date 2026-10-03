@@ -114,6 +114,17 @@
                 modal_catalog_title: "Додати вироби з каталогу в накладну",
                 no_catalog_items: "Немає створених виробів у каталозі",
                 no_invoice_items: "У накладній ще немає виробів. Додайте створений виріб або оберіть з вкладки «Всі вироби».",
+                btn_download_png: "Завантажити PNG",
+                btn_copy_png: "Скопіювати картинку",
+                btn_download_pdf: "Завантажити PDF",
+                btn_download_excel: "Завантажити Excel",
+                btn_share_invoice: "Поділитися",
+                btn_email_invoice: "Надіслати на Email",
+                copied_image_success: "Зображення скопійовано в буфер обміну!",
+                copied_image_failed: "Не вдалося скопіювати зображення.",
+                all_items_in_invoice: "Усі вироби з каталогу вже є в накладній!",
+                catalog_status_in_inv: "В накладній ✓",
+                catalog_status_not_in_inv: "Не в накладній",
                 modal_del_title: "Підтвердження видалення",
                 modal_del_text: "Ви дійсно бажаєте видалити цей елемент? Цю дію неможливо буде скасувати.",
                 btn_cancel: "Скасувати",
@@ -334,11 +345,13 @@
         window.switchWcTab = function(tabName) {
             const panes = {
                 calc: document.getElementById('wc-tab-pane-calc'),
+                catalog: document.getElementById('wc-tab-pane-catalog'),
                 appearance: document.getElementById('wc-tab-pane-appearance'),
                 settings: document.getElementById('wc-tab-pane-settings')
             };
             const buttons = {
                 calc: document.getElementById('tab-nav-calc'),
+                catalog: document.getElementById('tab-nav-catalog'),
                 appearance: document.getElementById('tab-nav-appearance'),
                 settings: document.getElementById('tab-nav-settings')
             };
@@ -764,6 +777,9 @@
                 return;
             }
 
+            const addInvChk = document.getElementById('add-to-invoice-chk');
+            const inInvoiceVal = addInvChk ? addInvChk.checked : true;
+
             const newItem = {
                 id: 'p_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
                 name: name,
@@ -773,6 +789,7 @@
                 price: price,
                 qty: 1,
                 selected: true,
+                in_invoice: inInvoiceVal,
                 photo: ''
             };
 
@@ -963,8 +980,17 @@
             if (!modal || !container) return;
 
             const notInInv = items.filter(it => it.in_invoice === false);
-            if (notInInv.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding:24px; color:#64748b;">${items.length === 0 ? t('no_catalog_items') : (currentLang === 'uk' ? 'Усі вироби з каталогу вже є в накладній!' : 'All catalog products are already in the invoice!')}</div>`;
+            if (items.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:24px; color:#64748b;">${t('no_catalog_items')}</div>`;
+            } else if (notInInv.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:24px; color:#64748b;">
+                        <p style="margin:0 0 12px 0;">${t('all_items_in_invoice')}</p>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="closeAddFromCatalogModal(); switchWcTab('catalog');">
+                            ${t('tab_catalog')}
+                        </button>
+                    </div>
+                `;
             } else {
                 container.innerHTML = `
                     <div style="display:flex; flex-direction:column; gap:8px;">

@@ -95,6 +95,17 @@ class WpCalculatorAdmin {
                 'modal_catalog_title' => 'Додати вироби з каталогу в накладну',
                 'no_catalog_items' => 'Немає створених виробів у каталозі',
                 'no_invoice_items' => 'У накладній ще немає виробів. Додайте створений виріб або оберіть з вкладки «Всі вироби».',
+                'btn_download_png' => 'Завантажити PNG',
+                'btn_copy_png' => 'Скопіювати картинку',
+                'btn_download_pdf' => 'Завантажити PDF',
+                'btn_download_excel' => 'Завантажити Excel',
+                'btn_share_invoice' => 'Поділитися',
+                'btn_email_invoice' => 'Надіслати на Email',
+                'copied_image_success' => 'Зображення скопійовано в буфер обміну!',
+                'copied_image_failed' => 'Не вдалося скопіювати зображення.',
+                'all_items_in_invoice' => 'Усі вироби з каталогу вже є в накладній!',
+                'catalog_status_in_inv' => 'В накладній ✓',
+                'catalog_status_not_in_inv' => 'Не в накладній',
                 'modal_del_title' => 'Підтвердження видалення',
                 'modal_del_text' => 'Ви дійсно бажаєте видалити цей елемент? Цю дію неможливо буде скасувати.',
                 'btn_cancel' => 'Скасувати',
@@ -408,8 +419,31 @@ class WpCalculatorAdmin {
                                     </div>
                                 </div>
 
-                                <div class="no-invoice" style="margin-top:16px; text-align:right;">
-                                    <button type="button" class="btn btn-green" onclick="enterInvoiceMode()" data-i18n="btn_invoice_mode"><?php echo esc_html($t['btn_invoice_mode']); ?></button>
+                                <!-- Панель дій та експорту накладної -->
+                                <div style="margin-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="downloadInvoicePng()" title="Завантажити накладну як картинку PNG" data-i18n="btn_download_png">
+                                            <span>🖼️</span> <?php echo esc_html($t['btn_download_png']); ?>
+                                        </button>
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="copyInvoicePng()" title="Скопіювати зображення в буфер для вставки в чат" data-i18n="btn_copy_png">
+                                            <span>📋</span> <?php echo esc_html($t['btn_copy_png']); ?>
+                                        </button>
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="downloadInvoicePdf()" title="Завантажити накладну у форматі PDF" data-i18n="btn_download_pdf">
+                                            <span>📄</span> <?php echo esc_html($t['btn_download_pdf']); ?>
+                                        </button>
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="downloadInvoiceExcel()" title="Експортувати замовлення в таблицю Excel" data-i18n="btn_download_excel">
+                                            <span>📊</span> <?php echo esc_html($t['btn_download_excel']); ?>
+                                        </button>
+                                        <button type="button" class="btn btn-outline btn-sm" id="btn-share-wc" onclick="shareInvoice()" title="Поділитися накладною через будь-який додаток" data-i18n="btn_share_invoice">
+                                            <span>📲</span> <?php echo esc_html($t['btn_share_invoice']); ?>
+                                        </button>
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="emailInvoice()" title="Надіслати замовлення по email" data-i18n="btn_email_invoice">
+                                            <span>✉️</span> <?php echo esc_html($t['btn_email_invoice']); ?>
+                                        </button>
+                                    </div>
+                                    <div class="no-invoice">
+                                        <button type="button" class="btn btn-green" onclick="enterInvoiceMode()" data-i18n="btn_invoice_mode"><?php echo esc_html($t['btn_invoice_mode']); ?></button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -452,7 +486,39 @@ class WpCalculatorAdmin {
                     </div>
                 </div>
 
-                <!-- ВКЛАДКА: ОФОРМЛЕННЯ -->
+                                <!-- ВКЛАДКА 2: ВСІ ВИРОБИ (КАТАЛОГ) -->
+                <div id="wc-tab-pane-catalog" class="wc-tab-pane" style="display:none;">
+                    <div class="tc-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                            <div>
+                                <h2 style="margin:0; font-size:20px; color:var(--tc-dark);" data-i18n="catalog_title"><?php echo esc_html($t['catalog_title']); ?></h2>
+                                <p style="margin:4px 0 0 0; font-size:13px; color:#64748b;" data-i18n="catalog_desc"><?php echo esc_html($t['catalog_desc']); ?></p>
+                            </div>
+                            <button type="button" class="btn btn-green" onclick="switchWcTab('calc')">
+                                <span>➕</span> <span data-i18n="sec2_title"><?php echo esc_html($t['sec2_title']); ?></span>
+                            </button>
+                        </div>
+                        <div class="tc-table-responsive">
+                            <table class="tc-table" id="catalog-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40px;"></th>
+                                        <th style="width:50px;" data-i18n="col_photo"><?php echo esc_html($t['col_photo']); ?></th>
+                                        <th data-i18n="lbl_add_name"><?php echo esc_html($t['lbl_add_name']); ?></th>
+                                        <th data-i18n="col_material"><?php echo esc_html($t['col_material']); ?></th>
+                                        <th data-i18n="col_dims"><?php echo esc_html($t['col_dims']); ?></th>
+                                        <th data-i18n="col_price_pc"><?php echo esc_html($t['col_price_pc']); ?></th>
+                                        <th style="width:160px; text-align:center;">Статус</th>
+                                        <th style="width:130px; text-align:right;" data-i18n="col_actions"><?php echo esc_html($t['col_actions']); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="catalog-tab-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+<!-- ВКЛАДКА: ОФОРМЛЕННЯ -->
                 <div id="wc-tab-pane-appearance" class="wc-tab-pane" style="display:none;">
                     <div class="tc-card">
                         <h2 data-i18n="appearance_title"><?php echo esc_html($t['appearance_title']); ?></h2>
