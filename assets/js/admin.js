@@ -331,6 +331,14 @@
             const matName = document.getElementById('mat-name');
             if (matName) matName.placeholder = currentLang === 'uk' ? 'напр. Дуб селект' : 'e.g. Premium Oak';
 
+            const currSymbol = t('curr');
+            document.querySelectorAll('[data-i18n="lbl_add_price"]').forEach(el => {
+                el.textContent = (currentLang === 'uk' ? 'Ціна/шт (' : 'Price/unit (') + currSymbol + ')';
+            });
+            document.querySelectorAll('[data-i18n="lbl_mat_rate"]').forEach(el => {
+                el.textContent = (currentLang === 'uk' ? 'Тариф за 1 см² (' : 'Rate per 1 cm² (') + currSymbol + ')';
+            });
+
             renderMaterials();
             renderItems();
             updateCalculations();
@@ -1123,6 +1131,8 @@
             document.getElementById('edit-prod-name').value = item.name || '';
             document.getElementById('edit-prod-len').value = item.len || '';
             document.getElementById('edit-prod-width').value = item.width || '';
+            const editHeightEl = document.getElementById('edit-prod-height');
+            if (editHeightEl) editHeightEl.value = (item.height && parseFloat(item.height) > 0) ? item.height : '';
             document.getElementById('edit-prod-price').value = item.price || '';
 
             const editMatSel = document.getElementById('edit-prod-mat');
@@ -1150,17 +1160,12 @@
             document.getElementById('edit-prod-name').value = (item.name || '') + copySuffix;
             document.getElementById('edit-prod-len').value = item.len || '';
             document.getElementById('edit-prod-width').value = item.width || '';
+            const editCopyHeightEl = document.getElementById('edit-prod-height');
+            if (editCopyHeightEl) editCopyHeightEl.value = (item.height && parseFloat(item.height) > 0) ? item.height : '';
             document.getElementById('edit-prod-price').value = item.price || '';
 
             const editMatSel = document.getElementById('edit-prod-mat');
-            if (editMatSel) {
-                for (let i = 0; i < editMatSel.options.length; i++) {
-                    if (editMatSel.options[i].getAttribute('data-name') === item.material) {
-                        editMatSel.selectedIndex = i;
-                        break;
-                    }
-                }
-            }
+            populateMaterialSelect(editMatSel, item.height, item.material_id || item.material);
 
             document.getElementById('modal-edit-product').style.display = 'flex';
         };
@@ -1168,6 +1173,8 @@
         window.closeEditProductModal = function() {
             document.getElementById('modal-edit-product').style.display = 'none';
             document.getElementById('edit-prod-id').value = '';
+            const editHeightEl = document.getElementById('edit-prod-height');
+            if (editHeightEl) editHeightEl.value = '';
             const srcIdEl = document.getElementById('edit-prod-source-id');
             if (srcIdEl) srcIdEl.value = '';
             const actionEl = document.getElementById('edit-prod-action');
@@ -1189,12 +1196,17 @@
             const matName = selectedOpt ? selectedOpt.getAttribute('data-name') : '';
             const len = parseFloat(document.getElementById('edit-prod-len').value) || 0;
             const width = parseFloat(document.getElementById('edit-prod-width').value) || 0;
+            const editHeightEl = document.getElementById('edit-prod-height');
+            const height = parseFloat(editHeightEl ? editHeightEl.value : 0) || 0;
             const price = parseFloat(document.getElementById('edit-prod-price').value) || 0;
 
             if (!name) {
                 showToast(t('enter_valid_name'), 'error');
                 return;
             }
+
+            const areaCm2 = (len * width) / 100;
+            const volumeCm3 = height > 0 ? ((len * width * height) / 1000) : null;
 
             if (action === 'copy' && sourceId) {
                 const orig = items.find(it => String(it.id) === String(sourceId));
@@ -1207,6 +1219,9 @@
                     material_id: selectedOpt ? selectedOpt.value : (orig ? (orig.material_id || '') : ''),
                     len: len,
                     width: width,
+                    height: height > 0 ? height : null,
+                    area_cm2: areaCm2,
+                    volume_cm3: volumeCm3,
                     price: price,
                     qty: (isForInvoice && orig) ? (orig.qty || 1) : 1,
                     selected: isForInvoice,
@@ -1235,6 +1250,9 @@
                 item.material_id = selectedOpt ? selectedOpt.value : (item.material_id || '');
                 item.len = len;
                 item.width = width;
+                item.height = height > 0 ? height : null;
+                item.area_cm2 = areaCm2;
+                item.volume_cm3 = volumeCm3;
                 item.price = price;
 
                 closeEditProductModal();
@@ -1267,17 +1285,12 @@
             document.getElementById('edit-prod-name').value = (item.name || '') + suffix;
             document.getElementById('edit-prod-len').value = item.len || '';
             document.getElementById('edit-prod-width').value = item.width || '';
+            const dupHeightEl = document.getElementById('edit-prod-height');
+            if (dupHeightEl) dupHeightEl.value = (item.height && parseFloat(item.height) > 0) ? item.height : '';
             document.getElementById('edit-prod-price').value = item.price || '';
 
             const editMatSel = document.getElementById('edit-prod-mat');
-            if (editMatSel) {
-                for (let i = 0; i < editMatSel.options.length; i++) {
-                    if (editMatSel.options[i].getAttribute('data-name') === item.material) {
-                        editMatSel.selectedIndex = i;
-                        break;
-                    }
-                }
-            }
+            populateMaterialSelect(editMatSel, item.height, item.material_id || item.material);
 
             document.getElementById('modal-edit-product').style.display = 'flex';
         };
