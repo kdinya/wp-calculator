@@ -51,6 +51,9 @@
                 opt_unit_cm3: "Кубічні сантиметри (см³)",
                 rate_per_unit: "Тариф",
                 no_materials_unit: "Немає матеріалів для обраного типу розрахунку",
+                btn_clone_catalog: "Дублювати в каталозі",
+                lbl_action_edit: "Редагувати",
+                lbl_action_delete: "Видалити",
                 sec1_title: "1. Швидкий калькулятор вартості",
                 lbl_calc_mat: "Матеріал (тариф за 1 см²)",
                 lbl_calc_len: "Довжина (мм)",
@@ -1281,7 +1284,7 @@
 
         window.askDeleteItem = function(id) {
             showConfirmModal(() => {
-                items = items.filter(it => it.id !== id);
+                items = items.filter(it => String(it.id) !== String(id));
                 renderItems();
                 saveData();
             });
@@ -1313,7 +1316,7 @@
             const copyName = orig.name ? (orig.name + (currentLang === 'uk' ? ' (копія)' : ' (copy)')) : (currentLang === 'uk' ? 'Копія виробу' : 'Copy of product');
             const newItem = {
                 ...orig,
-                id: Date.now() + Math.floor(Math.random() * 1000),
+                id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
                 name: copyName,
                 in_invoice: true,
                 selected: true
@@ -1332,7 +1335,7 @@
             const copyName = orig.name ? (orig.name + (currentLang === 'uk' ? ' (копія)' : ' (copy)')) : (currentLang === 'uk' ? 'Копія виробу' : 'Copy of product');
             const newItem = {
                 ...orig,
-                id: Date.now() + Math.floor(Math.random() * 1000),
+                id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
                 name: copyName,
                 in_invoice: false,
                 selected: false

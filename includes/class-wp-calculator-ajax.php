@@ -104,10 +104,8 @@ function wood_calc_get_stored_data() {
         'initialized' => $found_storage && (!empty($merged_materials) || !empty($merged_items)),
     );
 
-    $primary_compare = is_array($primary_stored)
-        ? array_intersect_key($primary_stored, array_flip(array('materials', 'items', 'settings', 'initialized')))
-        : null;
-    if ($found_storage && $primary_compare !== $cached_data) {
+    // Only write on read if primary storage was completely missing and had to be migrated from legacy
+    if ($found_storage && $primary_stored === null) {
         update_option('wood_calc_store_v3', $cached_data, false);
     }
 
@@ -133,9 +131,19 @@ function wood_calc_normalize_material($material, $fallback_id = '') {
 
     $unit = (isset($material['unit']) && $material['unit'] === 'cm3') ? 'cm3' : 'cm2';
 
+    $raw_id = isset($material['id']) && $material['id'] !== '' ? (string) $material['id'] : (string) $fallback_id;
+    $safe_id = preg_replace('/[^a-zA-Z0-9_-]/', '', $raw_id);
+    if ($safe_id === '') {
+        $safe_id = 'm_' . sanitize_title($name);
+        $safe_id = preg_replace('/[^a-zA-Z0-9_-]/', '', $safe_id);
+    }
+    if ($safe_id === '') {
+        $safe_id = 'm_' . wp_rand(1000, 9999);
+    }
+
     return array(
-        'id' => isset($material['id']) && $material['id'] !== '' ? sanitize_text_field((string) $material['id']) : $fallback_id,
-        'name' => $name,
+        'id' => $safe_id,
+        'name' => function_exists('mb_substr') ? mb_substr($name, 0, 255) : substr($name, 0, 255),
         'price' => $price,
         'unit' => $unit,
     );
@@ -181,8 +189,9 @@ function wood_calc_save_data() {
 
     $materials = array();
     if (is_array($data['materials'])) {
+        $mat_count = 0;
         foreach ($data['materials'] as $material) {
-            if (!is_array($material)) {
+            if (!is_array($material) || ++$mat_count > 500) {
                 continue;
             }
 
@@ -200,8 +209,9 @@ function wood_calc_save_data() {
 
     $items = array();
     if (is_array($data['items'])) {
+        $item_count = 0;
         foreach ($data['items'] as $item) {
-            if (!is_array($item)) {
+            if (!is_array($item) || ++$item_count > 5000) {
                 continue;
             }
 
@@ -229,9 +239,11 @@ function wood_calc_save_data() {
             }
 
             $qty = max(1, $qty);
-            $item_id = isset($item['id']) && $item['id'] !== ''
-                ? sanitize_text_field((string) $item['id'])
-                : 'item_' . time() . '_' . wp_rand(100, 999);
+            $raw_item_id = isset($item['id']) && $item['id'] !== '' ? (string) $item['id'] : '';
+            $item_id = preg_replace('/[^a-zA-Z0-9_-]/', '', $raw_item_id);
+            if ($item_id === '') {
+                $item_id = 'item_' . time() . '_' . wp_rand(100, 999);
+            }
 
             $items[] = array(
                 'id' => $item_id,
@@ -285,6 +297,19 @@ function wood_calc_save_data() {
         'initialized' => true,
         'updated_at' => current_time('mysql'),
     );
+
+    $current_stored = get_option('wood_calc_store_v3', null);
+    if (is_array($current_stored)) {
+        $keys_to_compare = array('materials', 'items', 'settings', 'initialized');
+        $cmp_current = array_intersect_key($current_stored, array_flip($keys_to_compare));
+        $cmp_new = array_intersect_key($save_payload, array_flip($keys_to_compare));
+        if ($cmp_current === $cmp_new) {
+            wp_send_json_success(array(
+                'message' => 'Дані актуальні (без змін).',
+                'unchanged' => true,
+            ));
+        }
+    }
 
     update_option('wood_calc_store_v3', $save_payload, false);
 
