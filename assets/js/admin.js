@@ -2176,15 +2176,15 @@
             const matSelect = document.getElementById('cat-add-mat');
             const lenInput = document.getElementById('cat-add-len');
             const widthInput = document.getElementById('cat-add-width');
+            const heightInput = document.getElementById('cat-add-height');
             const priceInput = document.getElementById('cat-add-price');
             const invCheckbox = document.getElementById('cat-add-to-inv');
 
             if (nameInput) nameInput.value = '';
-            populateMaterialSelect(matSelect, heightInput ? heightInput.value : 0);
+            if (heightInput) heightInput.value = '';
             if (lenInput) lenInput.value = '1000';
             if (widthInput) widthInput.value = '500';
-            const heightInput = document.getElementById('cat-add-height');
-            if (heightInput) heightInput.value = '';
+            populateMaterialSelect(matSelect, heightInput ? heightInput.value : 0);
             if (invCheckbox) invCheckbox.checked = false;
 
             recalcCatalogModalPrice();
