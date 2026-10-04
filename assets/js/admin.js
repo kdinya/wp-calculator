@@ -90,7 +90,7 @@
                 invoice_title: "РОЗРАХУНОК ЗАМОВЛЕННЯ",
                 sec_materials_title: "📦 Довідник матеріалів",
                 lbl_mat_name: "Назва матеріалу",
-                lbl_mat_rate: "Тариф за 1 см² (грн)",
+                lbl_mat_rate: "Тариф за 1 см² / см³ (грн)",
                 btn_mat_add: "+ Додати",
                 appearance_title: "🎨 Зовнішній вигляд",
                 lbl_accent_color: "Акцентний колір кнопок та активних елементів",
@@ -214,7 +214,7 @@
                 invoice_title: "ORDER ESTIMATE",
                 sec_materials_title: "📦 Materials Directory",
                 lbl_mat_name: "Material Name",
-                lbl_mat_rate: "Rate per 1 cm² (UAH)",
+                lbl_mat_rate: "Rate per 1 cm² / cm³ (UAH)",
                 btn_mat_add: "+ Add",
                 appearance_title: "🎨 Appearance",
                 lbl_accent_color: "Accent color for buttons and active elements",
@@ -336,7 +336,7 @@
                 el.textContent = (currentLang === 'uk' ? 'Ціна/шт (' : 'Price/unit (') + currSymbol + ')';
             });
             document.querySelectorAll('[data-i18n="lbl_mat_rate"]').forEach(el => {
-                el.textContent = (currentLang === 'uk' ? 'Тариф за 1 см² (' : 'Rate per 1 cm² (') + currSymbol + ')';
+                el.textContent = (currentLang === 'uk' ? 'Тариф за 1 см² / см³ (' : 'Rate per 1 cm² / cm³ (') + currSymbol + ')';
             });
 
             renderMaterials();
@@ -1919,7 +1919,7 @@
                         const q = it.qty || 1;
                         const price = parseFloat(it.price || 0).toFixed(2);
                         const sum = (parseFloat(it.price || 0) * q).toFixed(2);
-                        const dims = (it.len && it.width) ? (it.len + ' × ' + it.width + ' мм') : '-';
+                        const dims = (it.len && it.width) ? formatItemDims(it) : '-';
 
                         ctx.fillStyle = '#334155';
                         ctx.font = '13px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
@@ -2015,7 +2015,7 @@
                 const q = it.qty || 1;
                 const price = parseFloat(it.price || 0).toFixed(2);
                 const sum = (parseFloat(it.price || 0) * q).toFixed(2);
-                const dims = (it.len && it.width) ? (it.len + ' × ' + it.width + ' мм') : '-';
+                const dims = (it.len && it.width) ? formatItemDims(it) : '-';
                 return '<tr>' +
                     '<td style="text-align:center;">' + (idx + 1) + '</td>' +
                     '<td><strong>' + escapeHtml(it.name) + '</strong></td>' +
@@ -2079,7 +2079,7 @@
                 const q = it.qty || 1;
                 const price = parseFloat(it.price || 0).toFixed(2);
                 const sum = (parseFloat(it.price || 0) * q).toFixed(2);
-                const dims = (it.len && it.width) ? (it.len + 'x' + it.width + ' mm') : '-';
+                const dims = (it.len && it.width) ? formatItemDims(it) : '-';
                 const name = cleanCsvField(it.name);
                 const mat = cleanCsvField(it.material || '');
                 csv += (idx + 1) + ';' + name + ';' + mat + ';' + dims + ';' + q + ';' + price + ';' + sum + '\n';
@@ -2132,7 +2132,7 @@
                 const q = it.qty || 1;
                 const price = parseFloat(it.price || 0).toFixed(2);
                 const sum = (parseFloat(it.price || 0) * q).toFixed(2);
-                const dims = (it.len && it.width) ? (' (' + it.len + '×' + it.width + ' мм)') : '';
+                const dims = (it.len && it.width) ? (' (' + formatItemDims(it) + ')') : '';
                 body += (idx + 1) + '. ' + it.name + dims + ' — ' + q + ' шт. × ' + price + ' = ' + sum + ' ' + t('curr') + '\n';
             });
 
