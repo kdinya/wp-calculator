@@ -194,6 +194,9 @@
                 lbl_add_mat: "Select Material",
                 lbl_add_price: "Price/unit (UAH)",
                 btn_recalc_rate: "Recalculate by rate",
+                btn_clone_catalog: "Duplicate in catalog",
+                lbl_action_edit: "Edit",
+                lbl_action_delete: "Delete",
                 btn_recalc_rate_tip: "Calculate price by selected material rate and dimensions",
                 msg_price_recalculated: "Product price recalculated by material rate",
                 btn_add_save: "+ Save",
@@ -463,10 +466,36 @@
         }
 
         window.populateMaterialSelect = populateMaterialSelect;
+        window.recalcAddCustomProductPrice = function(showToastNotice) {
+            const matSel = document.getElementById('add-mat');
+            const lenInput = document.getElementById('add-len');
+            const widthInput = document.getElementById('add-width');
+            const heightInput = document.getElementById('add-height');
+            const priceInput = document.getElementById('add-price');
+            if (!matSel || !lenInput || !widthInput || !priceInput) return;
+
+            const opt = matSel.selectedIndex >= 0 ? matSel.options[matSel.selectedIndex] : null;
+            const rate = opt ? (parseFloat(opt.getAttribute('data-rate') || opt.value) || 0) : 0;
+            const len = parseFloat(lenInput.value) || 0;
+            const width = parseFloat(widthInput.value) || 0;
+            const height = parseFloat(heightInput ? heightInput.value : 0) || 0;
+
+            const dimQty = height > 0 ? ((len * width * height) / 1000) : ((len * width) / 100);
+            const calculated = dimQty * rate;
+            const finalPrice = calculated > 0 ? (Math.round(calculated * 10000) / 10000) : 0;
+            if (finalPrice > 0 || (len > 0 && width > 0)) {
+                priceInput.value = finalPrice > 0 ? finalPrice : '0';
+            }
+            if (showToastNotice) {
+                showToast(t('msg_price_recalculated'), 'info');
+            }
+        };
+
         window.updateAddFormMaterials = function(h) {
             const addMat = document.getElementById('add-mat');
             const selName = (addMat && addMat.selectedIndex >= 0 && addMat.options[addMat.selectedIndex]) ? addMat.options[addMat.selectedIndex].getAttribute('data-name') : '';
             populateMaterialSelect(addMat, h, selName);
+            recalcAddCustomProductPrice(false);
         };
         window.recalcEditProductPrice = function(showToastNotice) {
             const editMatSel = document.getElementById('edit-prod-mat');
@@ -1499,9 +1528,9 @@
                                         ${t('btn_add_to_inv')}
                                     </button>
                                 `}
-                                <button type="button" class="btn btn-outline btn-sm" onclick="openCopyProductModal('${item.id}', 'catalog')" title="Дублювати в каталозі">📋</button>
-                                <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="Редагувати">✏️</button>
-                                <button type="button" class="btn-delete-transp" onclick="askDeleteCatalogItem('${item.id}')" title="Видалити">🗑️</button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="openCopyProductModal('${item.id}', 'catalog')" title="${t('btn_clone_catalog')}">📋</button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="openEditProductModal('${item.id}')" title="${t('lbl_action_edit')}">✏️</button>
+                                <button type="button" class="btn-delete-transp" onclick="askDeleteCatalogItem('${item.id}')" title="${t('lbl_action_delete')}">🗑️</button>
                             </div>
                         </td>
                     </tr>

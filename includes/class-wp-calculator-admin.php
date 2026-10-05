@@ -55,6 +55,9 @@ class WpCalculatorAdmin {
                 'lbl_add_mat' => 'Оберіть матеріал',
                 'lbl_add_price' => 'Ціна/шт (грн)',
                 'btn_recalc_rate' => 'Перерахувати за тарифом',
+            'btn_clone_catalog' => 'Дублювати в каталозі',
+            'lbl_action_edit' => 'Редагувати',
+            'lbl_action_delete' => 'Видалити',
                 'btn_recalc_rate_tip' => 'Розрахувати ціну за тарифом обраного матеріалу та габаритами',
                 'msg_price_recalculated' => 'Ціну виробу перераховано за тарифом матеріалу',
                 'btn_add_save' => '+ Зберегти',
@@ -168,6 +171,9 @@ class WpCalculatorAdmin {
                 'lbl_add_mat' => 'Select Material',
                 'lbl_add_price' => 'Price/unit (UAH)',
                 'btn_recalc_rate' => 'Recalculate by rate',
+            'btn_clone_catalog' => 'Duplicate in catalog',
+            'lbl_action_edit' => 'Edit',
+            'lbl_action_delete' => 'Delete',
                 'btn_recalc_rate_tip' => 'Calculate price by selected material rate and dimensions',
                 'msg_price_recalculated' => 'Product price recalculated by material rate',
                 'btn_add_save' => '+ Save',
@@ -408,15 +414,15 @@ class WpCalculatorAdmin {
                                     </div>
                                     <div>
                                         <label data-i18n="lbl_add_mat"><?php echo esc_html($t['lbl_add_mat']); ?></label>
-                                        <select id="add-mat"></select>
+                                        <select id="add-mat" onchange="recalcAddCustomProductPrice(false)"></select>
                                     </div>
                                     <div>
                                         <label data-i18n="lbl_calc_len"><?php echo esc_html($t['lbl_calc_len']); ?></label>
-                                        <input type="number" id="add-len" placeholder="мм">
+                                        <input type="number" id="add-len" placeholder="мм" oninput="recalcAddCustomProductPrice(false)">
                                     </div>
                                     <div>
                                         <label data-i18n="lbl_calc_width"><?php echo esc_html($t['lbl_calc_width']); ?></label>
-                                        <input type="number" id="add-width" placeholder="мм">
+                                        <input type="number" id="add-width" placeholder="мм" oninput="recalcAddCustomProductPrice(false)">
                                     </div>
                                     <div>
                                         <label data-i18n="lbl_calc_height"><?php echo esc_html($t['lbl_calc_height']); ?></label>
@@ -424,7 +430,10 @@ class WpCalculatorAdmin {
                                     </div>
                                     <div>
                                         <label data-i18n="lbl_add_price"><?php echo esc_html($t['lbl_add_price']); ?></label>
-                                        <input type="number" step="any" id="add-price" placeholder="0.00">
+                                        <div style="display:flex; gap:6px; align-items:center;">
+                                            <input type="number" step="any" id="add-price" placeholder="0.00" style="flex:1;">
+                                            <button type="button" class="btn btn-outline btn-sm" onclick="recalcAddCustomProductPrice(true)" title="<?php echo esc_attr($t['btn_recalc_rate_tip']); ?>" data-i18n-title="btn_recalc_rate_tip" style="padding:6px 10px; font-size:12px; white-space:nowrap;">⚡</button>
+                                        </div>
                                     </div>
                                     <div>
                                         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">

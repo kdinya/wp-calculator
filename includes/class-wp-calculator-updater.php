@@ -235,7 +235,7 @@ class WpCalculatorGitHubUpdater {
 
         $package = $this->get_download_package($release);
         if (empty($package)) {
-            wp_send_json_error(array('message' => 'Архів wp-calculator.zip не знайдено в релізі.'));
+            wp_send_json_error(array('message' => 'Не вдалося отримати пакет оновлення з релізу GitHub.'));
         }
 
         $current = get_site_transient('update_plugins');
