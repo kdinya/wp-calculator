@@ -54,6 +54,9 @@ class WpCalculatorAdmin {
                 'lbl_add_name' => 'Назва виробу',
                 'lbl_add_mat' => 'Оберіть матеріал',
                 'lbl_add_price' => 'Ціна/шт (грн)',
+                'btn_recalc_rate' => 'Перерахувати за тарифом',
+                'btn_recalc_rate_tip' => 'Розрахувати ціну за тарифом обраного матеріалу та габаритами',
+                'msg_price_recalculated' => 'Ціну виробу перераховано за тарифом матеріалу',
                 'btn_add_save' => '+ Зберегти',
                 'sec3_title' => '3. Список виробів',
                 'btn_select_all' => 'Виділити всі',
@@ -164,6 +167,9 @@ class WpCalculatorAdmin {
                 'lbl_add_name' => 'Product Name',
                 'lbl_add_mat' => 'Select Material',
                 'lbl_add_price' => 'Price/unit (UAH)',
+                'btn_recalc_rate' => 'Recalculate by rate',
+                'btn_recalc_rate_tip' => 'Calculate price by selected material rate and dimensions',
+                'msg_price_recalculated' => 'Product price recalculated by material rate',
                 'btn_add_save' => '+ Save',
                 'sec3_title' => '3. Product List',
                 'btn_select_all' => 'Select All',
@@ -738,16 +744,16 @@ class WpCalculatorAdmin {
                             </div>
                             <div>
                                 <label data-i18n="lbl_add_mat"><?php echo esc_html($t['lbl_add_mat']); ?></label>
-                                <select id="edit-prod-mat"></select>
+                                <select id="edit-prod-mat" onchange="onEditProductMatChange()"></select>
                             </div>
                             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
                                 <div>
                                     <label data-i18n="lbl_calc_len"><?php echo esc_html($t['lbl_calc_len']); ?></label>
-                                    <input type="number" id="edit-prod-len">
+                                    <input type="number" id="edit-prod-len" oninput="onEditProductDimInput()">
                                 </div>
                                 <div>
                                     <label data-i18n="lbl_calc_width"><?php echo esc_html($t['lbl_calc_width']); ?></label>
-                                    <input type="number" id="edit-prod-width">
+                                    <input type="number" id="edit-prod-width" oninput="onEditProductDimInput()">
                                 </div>
                                 <div>
                                     <label data-i18n="lbl_calc_height"><?php echo esc_html($t['lbl_calc_height']); ?></label>
@@ -756,7 +762,10 @@ class WpCalculatorAdmin {
                             </div>
                             <div>
                                 <label data-i18n="lbl_add_price"><?php echo esc_html($t['lbl_add_price']); ?></label>
-                                <input type="number" step="any" id="edit-prod-price">
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <input type="number" step="any" id="edit-prod-price" style="flex:1;">
+                                    <button type="button" class="btn btn-outline" style="white-space:nowrap; padding:8px 12px; font-size:13px;" onclick="recalcEditProductPrice(true)" title="<?php echo esc_attr($t['btn_recalc_rate_tip']); ?>" data-i18n="btn_recalc_rate" data-i18n-title="btn_recalc_rate_tip">⚡ <?php echo esc_html($t['btn_recalc_rate']); ?></button>
+                                </div>
                             </div>
                             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
                                 <button type="button" class="btn btn-outline" onclick="closeEditProductModal()" data-i18n="btn_cancel"><?php echo esc_html($t['btn_cancel']); ?></button>

@@ -66,6 +66,9 @@
                 lbl_add_name: "Назва виробу",
                 lbl_add_mat: "Оберіть матеріал",
                 lbl_add_price: "Ціна/шт (грн)",
+                btn_recalc_rate: "Перерахувати за тарифом",
+                btn_recalc_rate_tip: "Розрахувати ціну за тарифом обраного матеріалу та габаритами",
+                msg_price_recalculated: "Ціну виробу перераховано за тарифом матеріалу",
                 btn_add_save: "+ Зберегти",
                 sec3_title: "3. Список виробів",
                 btn_select_all: "Виділити всі",
@@ -190,6 +193,9 @@
                 lbl_add_name: "Product Name",
                 lbl_add_mat: "Select Material",
                 lbl_add_price: "Price/unit (UAH)",
+                btn_recalc_rate: "Recalculate by rate",
+                btn_recalc_rate_tip: "Calculate price by selected material rate and dimensions",
+                msg_price_recalculated: "Product price recalculated by material rate",
                 btn_add_save: "+ Save",
                 sec3_title: "3. Product List",
                 btn_select_all: "Select All",
@@ -316,6 +322,13 @@
                 const k = el.getAttribute('data-i18n');
                 if (k && I18N[currentLang] && I18N[currentLang][k]) {
                     el.textContent = I18N[currentLang][k];
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const k = el.getAttribute('data-i18n-title');
+                if (k && I18N[currentLang] && I18N[currentLang][k]) {
+                    el.title = I18N[currentLang][k];
                 }
             });
 
@@ -455,10 +468,43 @@
             const selName = (addMat && addMat.selectedIndex >= 0 && addMat.options[addMat.selectedIndex]) ? addMat.options[addMat.selectedIndex].getAttribute('data-name') : '';
             populateMaterialSelect(addMat, h, selName);
         };
+        window.recalcEditProductPrice = function(showToastNotice) {
+            const editMatSel = document.getElementById('edit-prod-mat');
+            const lenInput = document.getElementById('edit-prod-len');
+            const widthInput = document.getElementById('edit-prod-width');
+            const heightInput = document.getElementById('edit-prod-height');
+            const priceInput = document.getElementById('edit-prod-price');
+            if (!editMatSel || !lenInput || !widthInput || !priceInput) return;
+
+            const opt = editMatSel.selectedIndex >= 0 ? editMatSel.options[editMatSel.selectedIndex] : null;
+            const rate = opt ? (parseFloat(opt.getAttribute('data-rate') || opt.value) || 0) : 0;
+            const len = parseFloat(lenInput.value) || 0;
+            const width = parseFloat(widthInput.value) || 0;
+            const height = parseFloat(heightInput ? heightInput.value : 0) || 0;
+
+            const dimQty = height > 0 ? ((len * width * height) / 1000) : ((len * width) / 100);
+            const calculated = dimQty * rate;
+            const finalPrice = calculated > 0 ? (Math.round(calculated * 10000) / 10000) : 0;
+            priceInput.value = finalPrice > 0 ? finalPrice : '0';
+
+            if (showToastNotice) {
+                showToast(t('msg_price_recalculated'), 'info');
+            }
+        };
+
+        window.onEditProductMatChange = function() {
+            recalcEditProductPrice(false);
+        };
+
+        window.onEditProductDimInput = function() {
+            recalcEditProductPrice(false);
+        };
+
         window.updateEditFormMaterials = function(h) {
             const editMat = document.getElementById('edit-prod-mat');
             const selName = (editMat && editMat.selectedIndex >= 0 && editMat.options[editMat.selectedIndex]) ? editMat.options[editMat.selectedIndex].getAttribute('data-name') : '';
             populateMaterialSelect(editMat, h, selName);
+            recalcEditProductPrice(false);
         };
 
         window.setWcCurrency = function(val) {
@@ -1247,7 +1293,7 @@
                 if (!item) return;
                 item.name = name;
                 item.material = matName || item.material;
-                item.material_id = selectedOpt ? selectedOpt.value : (item.material_id || '');
+                item.material_id = selectedOpt ? (selectedOpt.getAttribute('data-id') || selectedOpt.value || '') : (item.material_id || '');
                 item.len = len;
                 item.width = width;
                 item.height = height > 0 ? height : null;
@@ -1267,32 +1313,7 @@
         };
 
         window.duplicateItem = function(id) {
-            const item = items.find(it => String(it.id) === String(id));
-            if (!item) return;
-
-            // Prepare modal for copying, DO NOT add to items yet!
-            document.getElementById('edit-prod-id').value = '';
-            let srcIdEl = document.getElementById('edit-prod-source-id');
-            if (!srcIdEl) {
-                srcIdEl = document.createElement('input');
-                srcIdEl.type = 'hidden';
-                srcIdEl.id = 'edit-prod-source-id';
-                document.getElementById('modal-edit-product').appendChild(srcIdEl);
-            }
-            srcIdEl.value = item.id;
-
-            const suffix = (currentLang === 'uk' ? ' (копія)' : ' (copy)');
-            document.getElementById('edit-prod-name').value = (item.name || '') + suffix;
-            document.getElementById('edit-prod-len').value = item.len || '';
-            document.getElementById('edit-prod-width').value = item.width || '';
-            const dupHeightEl = document.getElementById('edit-prod-height');
-            if (dupHeightEl) dupHeightEl.value = (item.height && parseFloat(item.height) > 0) ? item.height : '';
-            document.getElementById('edit-prod-price').value = item.price || '';
-
-            const editMatSel = document.getElementById('edit-prod-mat');
-            populateMaterialSelect(editMatSel, item.height, item.material_id || item.material);
-
-            document.getElementById('modal-edit-product').style.display = 'flex';
+            openCopyProductModal(id, 'invoice');
         };
 
         window.askDeleteItem = function(id) {

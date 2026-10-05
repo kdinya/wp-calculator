@@ -25,6 +25,7 @@ A high-performance, universal calculation, estimation, and invoicing plugin for 
    - Selection checkboxes to accurately pick items included in the invoice and totals.
    - Dedicated **All Products (Catalog)** tab with a direct modal to add new products directly into catalog without switching tabs.
    - Duplicate with edit modal: clone any item with an immediate adjustment popup.
+   - Modal product editor & cloner with dynamic material filtering ($\text{cm}^2$ vs $\text{cm}^3$), real-time dimension-based recalculation, and a one-click "Recalculate by rate" action.
    - Smooth **Drag-and-Drop (⠿)** row reordering with accent indicator lines and immediate database persistence.
    - Order inclusion status badges (`In Invoice` / `Not in Invoice`).
 
@@ -105,6 +106,7 @@ A high-performance, universal calculation, estimation, and invoicing plugin for 
    - Чекбокси точного вибору позицій, що входять у накладну та враховуються у підсумках.
    - Окрема вкладка **«Всі вироби» (Каталог)** зі створенням виробу напряму у власному модальному вікні без перемикання на калькулятор.
    - Копіювання з модальним вікном: швидке створення схожих позицій із можливістю відредагувати назву, матеріал та розміри перед збереженням.
+   - Модальне редагування та дублювання виробу з динамічною фільтрацією матеріалів ($\text{см}^2$ / $\text{см}^3$), миттєвим перерахунком ціни та кнопкою «Перерахувати за тарифом».
    - Плавний **Drag-and-Drop (⠿)**: зміна порядку виробів із лінією-індикатором місця вставки та миттєвим збереженням у базі.
    - Бейджі статусу присутності позицій у накладній (`В накладній` / `Не в накладній`).
 
